@@ -1,0 +1,253 @@
+.commander-roster-panel {
+  position: absolute;
+  z-index: 0;
+  top: 158px;
+  right: 18px;
+  bottom: 18px;
+  left: 150px;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-color: #286b8b transparent;
+  scrollbar-width: thin;
+}
+
+.commander-roster-section + .commander-roster-section {
+  margin-top: 18px;
+}
+
+.commander-roster-section > header {
+  min-height: 30px;
+  padding: 4px 2px 7px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.commander-roster-section > header span,
+.commander-roster-section > header strong {
+  display: block;
+}
+
+.commander-roster-section > header span {
+  color: #58879c;
+  font: 600 7px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.14em;
+}
+
+.commander-roster-section > header strong {
+  margin-top: 4px;
+  color: #dceef5;
+  font-size: 11px;
+  font-weight: 640;
+}
+
+.commander-roster-section > header small {
+  color: #78a8ba;
+  font: 650 9px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.commander-roster-list {
+  min-height: 0;
+  padding: 3px 2px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 58px);
+  align-content: start;
+  gap: 9px;
+}
+
+.commander-roster-item {
+  position: relative;
+  width: 58px;
+  height: 58px;
+  display: block;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: default;
+  transition: filter 120ms ease, transform 120ms ease;
+}
+
+button.commander-roster-item {
+  cursor: pointer;
+}
+
+.commander-roster-item:hover {
+  filter: brightness(1.16) drop-shadow(0 0 7px rgba(77, 190, 230, 0.42));
+  transform: translateY(-1px);
+}
+
+.commander-roster-item.selected {
+  filter: brightness(1.18) drop-shadow(0 0 8px rgba(95, 205, 240, 0.72));
+  outline: 1px solid rgba(112, 207, 239, 0.72);
+  outline-offset: 2px;
+}
+
+.commander-roster-item img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  user-select: none;
+}
+
+
+.commander-unit-card {
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  left: 0;
+  width: min(390px, calc(100% - 4px));
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(68, 151, 184, 0.58);
+  background:
+    linear-gradient(135deg, rgba(25, 91, 121, 0.2), transparent 65%),
+    rgba(5, 28, 45, 0.92);
+  box-shadow: 0 7px 18px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.commander-unit-card.is-positioned {
+  opacity: 1;
+  pointer-events: auto;
+  visibility: visible;
+}
+
+.commander-unit-card > header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.commander-unit-card > header strong {
+  color: #e3f4fa;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.commander-unit-card > header code {
+  overflow: hidden;
+  color: #c8e4ee;
+  font: 650 14px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.commander-unit-card dl {
+  margin: 9px 0 0;
+  display: grid;
+  grid-template-columns: 0.8fr 1.35fr 1fr;
+  gap: 8px;
+}
+
+.commander-unit-card dl div {
+  min-width: 0;
+  padding-top: 7px;
+  border-top: 1px solid rgba(76, 145, 171, 0.3);
+}
+
+.commander-unit-card dt {
+  color: #6f9daf;
+  font-size: 9px;
+}
+
+.commander-unit-card dd {
+  margin: 3px 0 0;
+  overflow: hidden;
+  color: #c8e4ee;
+  font: 600 11px/1.2 "Rajdhani", sans-serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.commander-ability-card {
+  position: absolute;
+  z-index: 4;
+  top: 0;
+  left: 0;
+  width: min(440px, calc(100% - 4px));
+  max-height: calc(100% - 4px);
+  padding: 11px 13px;
+  border: 1px solid rgba(68, 151, 184, 0.68);
+  overflow-y: auto;
+  color: #c8e4ee;
+  background:
+    linear-gradient(135deg, rgba(25, 91, 121, 0.24), transparent 65%),
+    rgba(5, 28, 45, 0.97);
+  box-shadow: 0 9px 22px rgba(0, 0, 0, 0.28);
+  opacity: 0;
+  pointer-events: none;
+  scrollbar-color: #286b8b transparent;
+  scrollbar-width: thin;
+  visibility: hidden;
+}
+
+.commander-ability-card.is-positioned {
+  opacity: 1;
+  pointer-events: auto;
+  visibility: visible;
+}
+
+.commander-ability-card > header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.commander-ability-card > header strong {
+  color: #e3f4fa;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.commander-ability-card > header code {
+  overflow: hidden;
+  color: #b7dce8;
+  font: 620 12px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.commander-ability-card > section {
+  margin-top: 9px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(76, 145, 171, 0.3);
+}
+
+.commander-ability-card > section span,
+.commander-ability-card dt {
+  color: #6f9daf;
+  font-size: 9px;
+}
+
+.commander-ability-card > section p {
+  margin: 4px 0 0;
+  color: #c8e4ee;
+  font-size: 11px;
+  line-height: 1.35;
+  white-space: pre-line;
+}
+
+.commander-ability-card dl {
+  margin: 9px 0 0;
+  display: flex;
+  gap: 22px;
+}
+
+.commander-ability-card dl div {
+  min-width: 0;
+}
+
+.commander-ability-card dd {
+  margin: 3px 0 0;
+  color: #d7edf4;
+  font: 620 11px/1.2 "Rajdhani", sans-serif;
+}

@@ -1,0 +1,49 @@
+{
+  "$schema": "../schemas/patch-plan-v2.schema.json",
+  "formatVersion": 2,
+  "id": "elite-marine-example",
+  "title": "精英陆战队结构化示例",
+  "userSummary": {
+    "text": "新增一名拥有专属技能的精英陆战队单位。"
+  },
+  "target": "game-a.core",
+  "compatibility": {
+    "sc2DataBuild": "B97579",
+    "runtimeContract": 2
+  },
+  "scope": {
+    "kind": "global"
+  },
+  "isolation": {
+    "strategy": "global"
+  },
+  "operations": [
+    {
+      "opId": "clone-official-marine",
+      "kind": "catalog.clone",
+      "catalog": "Unit",
+      "source": "Marine",
+      "object": "GameAEliteMarine"
+    },
+    {
+      "opId": "set-elite-marine-life",
+      "kind": "catalog.set",
+      "catalog": "Unit",
+      "object": "GameAEliteMarine",
+      "path": "LifeMax",
+      "expect": 45,
+      "value": 100
+    },
+    {
+      "opId": "add-elite-marine-ability",
+      "kind": "catalog.insert",
+      "catalog": "Unit",
+      "object": "GameAEliteMarine",
+      "path": "AbilArray",
+      "index": "GameAEliteStim",
+      "attributes": {
+        "Link": "GameAEliteStim"
+      }
+    }
+  ]
+}

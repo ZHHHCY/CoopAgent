@@ -1,0 +1,66 @@
+// Thin host adapter for Blizzard's AC_TarsonisTrain mission.
+// Game A owns commander preparation; this map owns terrain and mission execution.
+
+trigger gameA_oblivionExpressStartTrigger;
+
+void GameA_OblivionExpressKeepSoloSessionAlive () {
+    // Editor Test has no second human participant. The official initialization
+    // restores shared defeat for the commander team, so apply this on both
+    // sides of that initialization without duplicating the policy itself.
+    PlayerSetAlliance(1, c_allianceIdDefeat, 2, false);
+    PlayerSetAlliance(2, c_allianceIdDefeat, 1, false);
+}
+
+bool GameA_OblivionExpressMissionLoaded (bool testConds, bool runActions) {
+    trigger missionStart;
+
+    if (!runActions) {
+        return true;
+    }
+
+    GameA_GeneratedBeforeMissionStart();
+
+    missionStart = TriggerCreate("gt_Init03LoadingComplete_Func");
+    TriggerExecute(missionStart, true, false);
+    TriggerDestroy(missionStart);
+
+    // Official commander startup has now applied its runtime formulas.
+    // Let installed Game A modules refresh values that must run afterwards.
+    GameA_GeneratedPostMissionStart();
+    return true;
+}
+
+bool GameA_OblivionExpressStart (bool testConds, bool runActions) {
+    trigger missionLoaded;
+    trigger playerSetup;
+    trigger inactiveUnitSetup;
+
+    if (!runActions) {
+        return true;
+    }
+
+    GameA_ConfigureCommander();
+
+    GameA_OblivionExpressKeepSoloSessionAlive();
+
+    // Preserve the official map's startup order while using Game A's local-safe loader.
+    playerSetup = TriggerCreate("gt_Init02Players_Func");
+    TriggerExecute(playerSetup, true, false);
+    TriggerDestroy(playerSetup);
+
+    inactiveUnitSetup = TriggerCreate("gt_SleepInactiveUnits_Func");
+    TriggerExecute(inactiveUnitSetup, true, false);
+    TriggerDestroy(inactiveUnitSetup);
+
+    missionLoaded = TriggerCreate("GameA_OblivionExpressMissionLoaded");
+    GameAI_LoadCoopMission("AC_TarsonisTrain", missionLoaded);
+    TriggerDestroy(missionLoaded);
+
+    GameA_OblivionExpressKeepSoloSessionAlive();
+    return true;
+}
+
+void GameA_OblivionExpressInit () {
+    gameA_oblivionExpressStartTrigger = TriggerCreate("GameA_OblivionExpressStart");
+    GameA_Init(gameA_oblivionExpressStartTrigger);
+}

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<DocInfo>
+    <MatchMakerTag>
+        <Value>Coop</Value>
+    </MatchMakerTag>
+    <Dependencies>
+        <Value>bnet:Allied Commanders/0.0/1270,file:Mods\AlliedCommanders.SC2Mod</Value>
+    </Dependencies>
+</DocInfo>

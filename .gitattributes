@@ -1,0 +1,21 @@
+* text=auto
+
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+*.js text eol=lf
+*.mjs text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.css text eol=lf
+*.json text eol=lf
+*.jsonc text eol=lf
+*.md text eol=lf
+*.toml text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+
+# Project templates and the bundled SC2 host are hash-checked byte-for-byte.
+/game-a/core/** -text whitespace=cr-at-eol
+/game-a/templates/** -text whitespace=cr-at-eol
+/game-a/projects/GameA-OblivionExpress.SC2Map/** binary

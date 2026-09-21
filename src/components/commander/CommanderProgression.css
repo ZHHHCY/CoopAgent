@@ -1,0 +1,447 @@
+.commander-level-panel {
+  position: absolute;
+  z-index: 1;
+  top: 18px;
+  right: 18px;
+  left: 132px;
+  height: 112px;
+  min-width: 0;
+  border: 1px solid rgba(68, 135, 163, 0.34);
+  border-radius: 3px;
+  overflow: visible;
+  background: #29485b;
+  box-shadow:
+    inset 0 1px rgba(189, 234, 250, 0.08),
+    0 12px 34px rgba(0, 0, 0, 0.2);
+}
+
+.commander-level-panel.protoss {
+  border-color: rgba(183, 151, 78, 0.32);
+  background: #3c4850;
+}
+
+.commander-level-panel.zerg {
+  border-color: rgba(143, 92, 158, 0.34);
+  background: #3c4052;
+}
+
+.commander-level-grid {
+  height: 100%;
+  padding: 6px;
+  display: grid;
+  grid-template-columns: repeat(8, minmax(34px, 48px));
+  grid-template-rows: repeat(2, 47px);
+  gap: 5px;
+  justify-content: start;
+}
+
+.commander-level-item {
+  position: relative;
+  min-width: 0;
+  padding: 2px;
+  border: 1px solid rgba(60, 116, 140, 0.22);
+  border-radius: 2px;
+  overflow: hidden;
+  color: #8ddcf8;
+  background: #24485e;
+  box-shadow: inset 0 1px rgba(185, 230, 247, 0.045);
+  cursor: pointer;
+}
+
+.commander-level-item:hover,
+.commander-level-item.selected {
+  border-color: currentColor;
+  box-shadow:
+    inset 0 0 10px rgba(50, 201, 255, 0.13),
+    0 0 9px rgba(50, 201, 255, 0.13);
+}
+
+.commander-level-item img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.commander-level-item > span {
+  position: absolute;
+  right: 1px;
+  bottom: 1px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 2px;
+  border: 1px solid rgba(65, 163, 205, 0.7);
+  border-radius: 1px;
+  display: grid;
+  place-items: center;
+  color: #a9e9ff;
+  background: rgba(3, 24, 39, 0.92);
+  font: 700 8px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.commander-level-panel.protoss .commander-level-item {
+  color: #ffda77;
+}
+
+.commander-level-panel.zerg .commander-level-item {
+  color: #e5b0f4;
+}
+
+.commander-level-message {
+  margin: 0;
+  padding: 18px 14px;
+  color: #83adbd;
+  font-size: 10px;
+}
+
+.commander-level-message.is-error {
+  color: var(--danger);
+}
+
+.commander-perk-detail {
+  position: absolute;
+  z-index: 3;
+  top: calc(100% + 7px);
+  left: 0;
+  width: min(540px, 100%);
+  min-height: 76px;
+  padding: 10px 12px;
+  border: 1px solid rgba(64, 151, 190, 0.62);
+  border-radius: 3px;
+  color: #bcd7e2;
+  background:
+    linear-gradient(135deg, rgba(42, 132, 173, 0.15), transparent 58%),
+    rgba(4, 24, 40, 0.97);
+  box-shadow: 0 13px 30px rgba(0, 0, 0, 0.3);
+}
+
+.commander-perk-detail > span {
+  margin-right: 7px;
+  color: #77cfee;
+  font: 700 9px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.commander-perk-detail strong {
+  color: #e0f1f7;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.commander-perk-detail p {
+  margin: 7px 0 0;
+  color: #91b4c2;
+  font-size: 10px;
+  line-height: 1.45;
+  white-space: pre-line;
+}
+
+.commander-mastery-panel {
+  position: absolute;
+  z-index: 1;
+  top: 144px;
+  right: 18px;
+  left: 18px;
+  height: 126px;
+  pointer-events: none;
+}
+
+.commander-mastery-label {
+  position: absolute;
+  top: 0;
+  left: 2px;
+  color: #9bc2d0;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  text-shadow: 0 1px 4px rgba(5, 24, 35, 0.42);
+}
+
+.commander-mastery-groups {
+  position: absolute;
+  top: 22px;
+  left: 0;
+  width: 104px;
+  height: 104px;
+  padding: 3px;
+  border: 1px solid rgba(96, 148, 169, 0.58);
+  border-radius: 3px;
+  display: grid;
+  grid-template-rows: repeat(3, 1fr);
+  gap: 3px;
+  background: rgba(5, 28, 46, 0.94);
+  box-shadow:
+    inset 0 1px rgba(197, 231, 241, 0.08),
+    0 2px 8px rgba(8, 25, 34, 0.18);
+  pointer-events: auto;
+}
+
+.commander-mastery-groups button {
+  position: relative;
+  min-width: 0;
+  padding: 0;
+  border: 1px solid rgba(91, 149, 172, 0.52);
+  border-radius: 2px;
+  color: #c0d7df;
+  background: linear-gradient(180deg, #315c72, #2b5065);
+  box-shadow:
+    inset 0 1px rgba(207, 238, 247, 0.09),
+    0 1px 2px rgba(5, 19, 28, 0.2);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-shadow: 0 1px 2px rgba(5, 22, 31, 0.48);
+  transition:
+    border-color 120ms ease,
+    color 120ms ease,
+    background-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.commander-mastery-groups button:hover,
+.commander-mastery-groups button.selected {
+  border-color: #54bfe8;
+  color: #e0f6fc;
+  background: #3b7189;
+  box-shadow:
+    inset 3px 0 #65bdd3,
+    inset 0 1px rgba(221, 245, 251, 0.14),
+    0 0 8px rgba(73, 177, 211, 0.14);
+}
+
+.commander-mastery-panel.protoss .commander-mastery-groups {
+  border-color: rgba(190, 149, 55, 0.5);
+}
+
+.commander-mastery-panel.protoss .commander-mastery-groups button:hover,
+.commander-mastery-panel.protoss .commander-mastery-groups button.selected {
+  border-color: #e2b84f;
+  color: #ffdf82;
+}
+
+.commander-mastery-panel.zerg .commander-mastery-groups {
+  border-color: rgba(130, 82, 143, 0.3);
+}
+
+.commander-mastery-panel.zerg .commander-mastery-groups button:hover,
+.commander-mastery-panel.zerg .commander-mastery-groups button.selected {
+  border-color: #bf70da;
+  color: #e8b7f6;
+}
+
+.commander-mastery-drawer {
+  position: absolute;
+  top: 22px;
+  left: 114px;
+  width: min(400px, calc(100% - 114px));
+  min-height: 56px;
+  padding: 4px;
+  border: 1px solid rgba(57, 116, 142, 0.3);
+  border-radius: 3px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+  background:
+    linear-gradient(145deg, rgba(39, 128, 168, 0.13), transparent 58%),
+    rgba(5, 28, 46, 0.97);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.27);
+  pointer-events: auto;
+}
+
+.commander-mastery-panel.protoss .commander-mastery-drawer {
+  border-color: rgba(190, 149, 55, 0.5);
+}
+
+.commander-mastery-panel.zerg .commander-mastery-drawer {
+  border-color: rgba(130, 82, 143, 0.3);
+}
+
+.commander-mastery-item {
+  min-width: 0;
+  padding: 4px 6px;
+  border: 1px solid rgba(56, 110, 134, 0.18);
+  border-radius: 2px;
+  background: rgba(7, 39, 62, 0.57);
+}
+
+.commander-mastery-item > strong,
+.commander-mastery-item > small {
+  display: block;
+}
+
+.commander-mastery-item > strong {
+  color: #d5e9f1;
+  font-size: 12px;
+  font-weight: 610;
+  line-height: 1.3;
+}
+
+.commander-mastery-item > small {
+  margin-top: 3px;
+  color: #78b8cf;
+  font-size: 11px;
+  line-height: 1.15;
+}
+
+.commander-prestige-panel {
+  position: absolute;
+  z-index: 1;
+  top: 292px;
+  right: 18px;
+  left: 18px;
+  height: 126px;
+  pointer-events: none;
+}
+
+.commander-prestige-label {
+  position: absolute;
+  top: 0;
+  left: 2px;
+  color: #9bc2d0;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  text-shadow: 0 1px 4px rgba(5, 24, 35, 0.42);
+}
+
+.commander-prestige-groups {
+  position: absolute;
+  top: 22px;
+  left: 0;
+  width: 104px;
+  height: 104px;
+  padding: 3px;
+  border: 1px solid rgba(96, 148, 169, 0.58);
+  border-radius: 3px;
+  display: grid;
+  grid-template-rows: repeat(3, 1fr);
+  gap: 3px;
+  background: rgba(5, 28, 46, 0.94);
+  box-shadow:
+    inset 0 1px rgba(197, 231, 241, 0.08),
+    0 2px 8px rgba(8, 25, 34, 0.18);
+  pointer-events: auto;
+}
+
+.commander-prestige-groups button {
+  position: relative;
+  min-width: 0;
+  padding: 0;
+  border: 1px solid rgba(91, 149, 172, 0.52);
+  border-radius: 2px;
+  color: #c0d7df;
+  background: linear-gradient(180deg, #315c72, #2b5065);
+  box-shadow:
+    inset 0 1px rgba(207, 238, 247, 0.09),
+    0 1px 2px rgba(5, 19, 28, 0.2);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-shadow: 0 1px 2px rgba(5, 22, 31, 0.48);
+  transition:
+    border-color 120ms ease,
+    color 120ms ease,
+    background-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.commander-prestige-groups button:hover,
+.commander-prestige-groups button.selected {
+  border-color: #54bfe8;
+  color: #e0f6fc;
+  background: #3b7189;
+  box-shadow:
+    inset 3px 0 #65bdd3,
+    inset 0 1px rgba(221, 245, 251, 0.14),
+    0 0 8px rgba(73, 177, 211, 0.14);
+}
+
+.commander-prestige-panel.protoss .commander-prestige-groups {
+  border-color: rgba(190, 149, 55, 0.5);
+}
+
+.commander-prestige-panel.protoss .commander-prestige-groups button:hover,
+.commander-prestige-panel.protoss .commander-prestige-groups button.selected {
+  border-color: #e2b84f;
+  color: #ffdf82;
+}
+
+.commander-prestige-panel.zerg .commander-prestige-groups {
+  border-color: rgba(130, 82, 143, 0.3);
+}
+
+.commander-prestige-panel.zerg .commander-prestige-groups button:hover,
+.commander-prestige-panel.zerg .commander-prestige-groups button.selected {
+  border-color: #bf70da;
+  color: #e8b7f6;
+}
+
+.commander-prestige-drawer {
+  position: absolute;
+  top: 22px;
+  left: 114px;
+  width: min(400px, calc(100% - 114px));
+  max-height: 126px;
+  padding: 5px;
+  border: 1px solid rgba(57, 116, 142, 0.3);
+  border-radius: 3px;
+  overflow-y: auto;
+  background:
+    linear-gradient(145deg, rgba(39, 128, 168, 0.13), transparent 58%),
+    rgba(5, 28, 46, 0.97);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.27);
+  pointer-events: auto;
+  scrollbar-color: #286b8b #061c2f;
+  scrollbar-width: thin;
+}
+
+.commander-prestige-panel.protoss .commander-prestige-drawer {
+  border-color: rgba(190, 149, 55, 0.5);
+}
+
+.commander-prestige-panel.zerg .commander-prestige-drawer {
+  border-color: rgba(130, 82, 143, 0.3);
+}
+
+.commander-prestige-detail {
+  padding: 6px 7px;
+  border: 1px solid rgba(56, 110, 134, 0.18);
+  border-radius: 2px;
+  background: rgba(7, 39, 62, 0.57);
+}
+
+.commander-prestige-detail strong {
+  color: #d5e9f1;
+  font-size: 12px;
+  font-weight: 620;
+}
+
+.commander-prestige-detail p {
+  margin: 5px 0 0;
+  color: #8eb8c8;
+  font-size: 11px;
+  line-height: 1.3;
+  white-space: pre-line;
+}
+
+
+.commander-mastery-groups,
+.commander-prestige-groups { background: #234459; }
+
+.commander-mastery-groups button,
+.commander-prestige-groups button { background: linear-gradient(180deg, #315c72, #2b5065); }
+
+.commander-mastery-groups button:hover,
+.commander-mastery-groups button.selected,
+.commander-prestige-groups button:hover,
+.commander-prestige-groups button.selected { background: #35667d; }
+
+.commander-mastery-drawer,
+.commander-prestige-drawer,
+.commander-perk-detail { background: #244357; }
+
+.commander-mastery-item,
+.commander-prestige-detail { background: #2a4b5e; }

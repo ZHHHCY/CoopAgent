@@ -1,0 +1,180 @@
+// Map-independent Game A preparation page and commander configuration.
+// A host map supplies the mission-start trigger passed to GameA_Init.
+
+int gameA_preparationDialog = c_invalidDialogId;
+int gameA_background = c_invalidDialogControlId;
+int gameA_pageTitle = c_invalidDialogControlId;
+int gameA_pageSubtitle = c_invalidDialogControlId;
+int gameA_commanderSectionTitle = c_invalidDialogControlId;
+int gameA_commanderStatus = c_invalidDialogControlId;
+int gameA_commanderDetails = c_invalidDialogControlId;
+int gameA_startButton = c_invalidDialogControlId;
+int gameA_startHint = c_invalidDialogControlId;
+
+trigger gameA_commanderTrigger;
+trigger gameA_startTrigger;
+trigger gameA_missionStartTrigger;
+
+bool gameA_commanderSelected = false;
+bool gameA_started = false;
+string gameA_selectedCommander = "";
+
+void GameA_SetGameplayUiVisible (bool visible) {
+    UISetFrameVisible(PlayerGroupAll(), c_syncFrameTypeConsolePanel, visible);
+    UISetFrameVisible(PlayerGroupAll(), c_syncFrameTypeResourcePanel, visible);
+    UISetFrameVisible(PlayerGroupAll(), c_syncFrameTypeSupply, visible);
+    UISetFrameVisible(PlayerGroupAll(), c_syncFrameTypeMenuBar, visible);
+    UISetFrameVisible(PlayerGroupAll(), c_syncFrameTypeObjectivePanel, visible);
+}
+
+void GameA_ConfigureCommander () {
+    // Disable Blizzard's local fallback to Raynor. In a Game A local test the
+    // build-generated compatibility layer treats this script state as the
+    // authoritative identity for commanders the engine refuses to assign.
+    libCOOC_gv_cC_DevStart_Forced = true;
+
+    libCOOC_gf_CC_PlayerCommanderSet(1, gameA_selectedCommander);
+    PlayerSetRace(1, libCOOC_gf_CC_CommanderRace(gameA_selectedCommander));
+    TechTreeUpgradeAddLevel(1, "PlayerCommander", 1);
+    libCOOC_gf_CC_PlayerExperienceSetToLevel(1, 15, gameA_selectedCommander);
+    libCOOC_gf_CC_PlayerMasteryEnabledSet(1, true);
+    libCOOC_gf_CC_UpdateTechStates(1);
+
+    // Game A's editor-test partner is always an AI-controlled level-15 Raynor.
+    libCOOC_gf_CC_PlayerCommanderSet(2, "TerranRaynor");
+    PlayerSetRace(2, libCOOC_gf_CC_CommanderRace("TerranRaynor"));
+    TechTreeUpgradeAddLevel(2, "PlayerCommander", 1);
+    libCOOC_gf_CC_PlayerExperienceSetToLevel(2, 15, "TerranRaynor");
+    libCOOC_gf_CC_PlayerMasteryEnabledSet(2, true);
+    libCOOC_gf_CC_UpdateTechStates(2);
+    PlayerSetDifficulty(2, 2);
+    GameA_PreparationOptionsApply();
+    GameA_MutatorSelectionApply();
+
+    // Generated commander-scoped upgrades and unit redirects run only after
+    // the preparation page has committed the selected commanders.
+    GameA_GeneratedConfigureCommander();
+}
+
+void GameA_UpdateCommanderSelection () {
+    GameA_AllCommandersUpdateSelection(gameA_selectedCommander, gameA_commanderDetails);
+}
+
+bool GameA_OnCommanderSelected (bool testConds, bool runActions) {
+    if (testConds) {
+        if (GameA_AllCommandersIndexForControl(EventDialogControl()) < 0) {
+            return false;
+        }
+    }
+    if (!runActions) {
+        return true;
+    }
+
+    gameA_selectedCommander = GameA_AllCommandersSelectedId(EventDialogControl());
+    if (gameA_selectedCommander == "") {
+        return false;
+    }
+    gameA_commanderSelected = true;
+    GameA_UpdateCommanderSelection();
+    GameA_PreparationOptionsCommanderChanged(gameA_selectedCommander);
+    GameA_MutatorSelectionCommanderChanged();
+    DialogControlSetPropertyAsText(gameA_commanderStatus, c_triggerControlPropertyText, PlayerGroupAll(), StringExternal("GameA/Preparation/StatusSelected"));
+    DialogControlSetPropertyAsText(gameA_startHint, c_triggerControlPropertyText, PlayerGroupAll(), StringExternal("GameA/Preparation/HintReady"));
+    DialogControlSetEnabled(gameA_startButton, PlayerGroupAll(), true);
+    return true;
+}
+
+bool GameA_OnStart (bool testConds, bool runActions) {
+    if (testConds && EventDialogControl() != gameA_startButton) {
+        return false;
+    }
+    if (!runActions) {
+        return true;
+    }
+    if (gameA_started || !gameA_commanderSelected) {
+        return true;
+    }
+
+    gameA_started = true;
+    DialogSetVisible(gameA_preparationDialog, PlayerGroupAll(), false);
+    UISetWorldVisible(PlayerGroupAll(), true);
+    GameA_SetGameplayUiVisible(true);
+
+    TriggerExecute(gameA_missionStartTrigger, true, false);
+    return true;
+}
+
+void GameA_CreatePreparationPage () {
+    gameA_preparationDialog = DialogCreate(100, 100, c_anchorCenter, 0, 0, true);
+    DialogSetTitle(gameA_preparationDialog, StringExternal("GameA/Preparation/DialogTitle"));
+    DialogSetRenderPriority(gameA_preparationDialog, 1000);
+    DialogSetFullscreen(gameA_preparationDialog, true);
+
+    gameA_background = DialogControlCreate(gameA_preparationDialog, c_triggerControlTypeImage);
+    DialogControlSetPropertyAsString(gameA_background, c_triggerControlPropertyImage, PlayerGroupAll(), "Assets\\Textures\\blured_background.dds");
+    DialogControlSetPropertyAsColor(gameA_background, c_triggerControlPropertyColor, PlayerGroupAll(), Color(95, 102, 116));
+    DialogControlSetFullDialog(gameA_background, PlayerGroupAll(), true);
+
+    gameA_pageTitle = DialogControlCreate(gameA_preparationDialog, c_triggerControlTypeLabel);
+    DialogControlSetSize(gameA_pageTitle, PlayerGroupAll(), 900, 64);
+    DialogControlSetPosition(gameA_pageTitle, PlayerGroupAll(), c_anchorTopLeft, 70, 55);
+    DialogControlSetPropertyAsText(gameA_pageTitle, c_triggerControlPropertyText, PlayerGroupAll(), StringExternal("GameA/Preparation/PageTitle"));
+
+    gameA_pageSubtitle = DialogControlCreate(gameA_preparationDialog, c_triggerControlTypeLabel);
+    DialogControlSetSize(gameA_pageSubtitle, PlayerGroupAll(), 1000, 40);
+    DialogControlSetPosition(gameA_pageSubtitle, PlayerGroupAll(), c_anchorTopLeft, 72, 118);
+    DialogControlSetPropertyAsText(gameA_pageSubtitle, c_triggerControlPropertyText, PlayerGroupAll(), StringExternal("GameA/Preparation/PageSubtitle"));
+
+    gameA_commanderSectionTitle = DialogControlCreate(gameA_preparationDialog, c_triggerControlTypeLabel);
+    DialogControlSetSize(gameA_commanderSectionTitle, PlayerGroupAll(), 900, 42);
+    DialogControlSetPosition(gameA_commanderSectionTitle, PlayerGroupAll(), c_anchorTopLeft, 80, 215);
+    DialogControlSetPropertyAsText(gameA_commanderSectionTitle, c_triggerControlPropertyText, PlayerGroupAll(), StringExternal("GameA/Preparation/ChooseCommander"));
+
+    gameA_commanderTrigger = TriggerCreate("GameA_OnCommanderSelected");
+    GameA_AllCommandersCreateControls(gameA_preparationDialog, gameA_commanderTrigger);
+    GameA_PreparationOptionsCreateControls(gameA_preparationDialog);
+    GameA_TestModeCreateControls(gameA_preparationDialog);
+    GameA_MutatorSelectionCreateControls(gameA_preparationDialog);
+
+    gameA_commanderStatus = DialogControlCreate(gameA_preparationDialog, c_triggerControlTypeLabel);
+    DialogControlSetSize(gameA_commanderStatus, PlayerGroupAll(), 890, 36);
+    DialogControlSetPosition(gameA_commanderStatus, PlayerGroupAll(), c_anchorTopLeft, 70, 630);
+    DialogControlSetPropertyAsText(gameA_commanderStatus, c_triggerControlPropertyText, PlayerGroupAll(), StringExternal("GameA/Preparation/StatusNotSelected"));
+
+    gameA_commanderDetails = DialogControlCreate(gameA_preparationDialog, c_triggerControlTypeLabel);
+    DialogControlSetSize(gameA_commanderDetails, PlayerGroupAll(), 270, 70);
+    DialogControlSetPosition(gameA_commanderDetails, PlayerGroupAll(), c_anchorTopLeft, 790, 700);
+    DialogControlSetPropertyAsText(gameA_commanderDetails, c_triggerControlPropertyText, PlayerGroupAll(), StringExternal("GameA/Preparation/CommanderDetails"));
+
+    gameA_startHint = DialogControlCreate(gameA_preparationDialog, c_triggerControlTypeLabel);
+    DialogControlSetSize(gameA_startHint, PlayerGroupAll(), 820, 44);
+    DialogControlSetPosition(gameA_startHint, PlayerGroupAll(), c_anchorBottomLeft, 100, 88);
+    DialogControlSetPropertyAsText(gameA_startHint, c_triggerControlPropertyText, PlayerGroupAll(), StringExternal("GameA/Preparation/HintSelect"));
+
+    gameA_startButton = DialogControlCreate(gameA_preparationDialog, c_triggerControlTypeButton);
+    DialogControlSetSize(gameA_startButton, PlayerGroupAll(), 300, 72);
+    DialogControlSetPosition(gameA_startButton, PlayerGroupAll(), c_anchorBottomRight, 100, 72);
+    DialogControlSetPropertyAsText(gameA_startButton, c_triggerControlPropertyText, PlayerGroupAll(), StringExternal("GameA/Preparation/StartButton"));
+    DialogControlSetEnabled(gameA_startButton, PlayerGroupAll(), false);
+
+    gameA_startTrigger = TriggerCreate("GameA_OnStart");
+    TriggerAddEventDialogControl(gameA_startTrigger, 1, gameA_startButton, c_triggerControlEventTypeClick);
+
+    DialogSetVisible(gameA_preparationDialog, PlayerGroupSingle(1), true);
+}
+
+void GameA_Init (trigger missionStartTrigger) {
+    gameA_commanderSelected = false;
+    gameA_started = false;
+    gameA_selectedCommander = "";
+    gameA_missionStartTrigger = missionStartTrigger;
+
+    GameA_GeneratedInit();
+
+    GameSetMissionTimePaused(true);
+    AITimePause(true);
+    UnitPauseAll(true);
+    UISetWorldVisible(PlayerGroupAll(), false);
+    GameA_SetGameplayUiVisible(false);
+    GameA_CreatePreparationPage();
+}

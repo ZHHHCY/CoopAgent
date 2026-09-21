@@ -1,0 +1,170 @@
+.markdown-message {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: #f1f6f8;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.62;
+}
+
+.markdown-message > :first-child {
+  margin-top: 0 !important;
+}
+
+.markdown-message > :last-child {
+  margin-bottom: 0 !important;
+}
+
+.message-body .markdown-message p {
+  margin: 0 0 0.72em;
+  color: inherit;
+  font: inherit;
+}
+
+.markdown-message h1,
+.markdown-message h2,
+.markdown-message h3,
+.markdown-message h4 {
+  margin: 1em 0 0.45em;
+  color: #edf8fb;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.markdown-message h1 {
+  font-size: 19px;
+}
+
+.markdown-message h2 {
+  padding-bottom: 5px;
+  border-bottom: 1px solid rgba(84, 138, 159, 0.45);
+  font-size: 17px;
+}
+
+.markdown-message h3 {
+  font-size: 15px;
+}
+
+.markdown-message h4 {
+  font-size: 13px;
+}
+
+.markdown-message strong {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.markdown-message em {
+  color: #dce9ed;
+}
+
+.markdown-message ul,
+.markdown-message ol {
+  margin: 0.55em 0 0.8em;
+  padding-left: 1.65em;
+}
+
+.markdown-message li {
+  padding-left: 0.15em;
+}
+
+.markdown-message li + li {
+  margin-top: 0.28em;
+}
+
+.markdown-message li::marker {
+  color: #66bed5;
+}
+
+.markdown-message blockquote {
+  margin: 0.8em 0;
+  padding: 7px 11px;
+  border-left: 3px solid #4da8c2;
+  color: #d9e7eb;
+  background: rgba(45, 104, 127, 0.16);
+}
+
+.markdown-message blockquote > :last-child {
+  margin-bottom: 0;
+}
+
+.markdown-message code {
+  padding: 0.12em 0.34em;
+  border: 1px solid rgba(77, 134, 156, 0.35);
+  border-radius: 3px;
+  color: #a9e5f3;
+  background: rgba(4, 25, 36, 0.75);
+  font: 0.9em/1.45 Consolas, "Cascadia Mono", monospace;
+}
+
+.markdown-message pre {
+  margin: 0.8em 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(70, 125, 148, 0.48);
+  border-radius: 4px;
+  overflow: auto;
+  color: #b9dce5;
+  background: #071d28;
+  box-shadow: inset 0 0 16px rgba(50, 201, 255, 0.04);
+}
+
+.markdown-message pre code {
+  padding: 0;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  white-space: pre;
+}
+
+.markdown-message table {
+  width: 100%;
+  margin: 0.85em 0;
+  border-collapse: collapse;
+  border: 1px solid rgba(78, 133, 155, 0.58);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.markdown-message th,
+.markdown-message td {
+  padding: 7px 9px;
+  border: 1px solid rgba(72, 122, 143, 0.46);
+  vertical-align: top;
+  text-align: left;
+}
+
+.markdown-message th {
+  color: #e5f5f8;
+  background: rgba(41, 92, 112, 0.58);
+  font-weight: 700;
+}
+
+.markdown-message tbody tr:nth-child(even) {
+  background: rgba(41, 84, 102, 0.2);
+}
+
+.markdown-message a {
+  color: #77d5e8;
+  text-decoration: underline;
+  text-decoration-color: rgba(119, 213, 232, 0.42);
+  text-underline-offset: 2px;
+}
+
+.markdown-message a:hover {
+  color: #b4eef7;
+}
+
+.markdown-message hr {
+  margin: 1em 0;
+  border: 0;
+  border-top: 1px solid rgba(77, 130, 151, 0.5);
+}
+
+.markdown-message img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0.8em 0;
+  border: 1px solid rgba(77, 130, 151, 0.5);
+  border-radius: 4px;
+}

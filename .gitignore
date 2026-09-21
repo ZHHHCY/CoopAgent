@@ -1,0 +1,43 @@
+# Logs
+logs
+outputs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+__pycache__/
+*.py[cod]
+game-a/build/
+game-a/runtime/
+game-a/drafts/
+# Superseded local sandboxes; the registered host projects are the source of truth.
+game-a/GameA.Sandbox.SC2Map
+game-a/maps/
+game-a/projects/GameA.SC2Map/
+game-a/projects/.gitkeep
+*.local
+.tools/
+.codex-tmp/
+src-tauri/target/
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+Thumbs.db
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Local compatibility project identity and per-project UI/session data
+/coop-project.json
+/.coopagent/

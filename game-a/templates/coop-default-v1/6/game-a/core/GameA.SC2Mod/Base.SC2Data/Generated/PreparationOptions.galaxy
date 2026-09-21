@@ -1,0 +1,365 @@
+// Game A preparation options backed by Blizzard's co-op profile APIs.
+
+int gameA_selectedPrestige = 0;
+int gameA_selectedDifficulty = 2;
+bool gameA_masteryInitialized = false;
+bool gameA_masteryPresetsCreated = false;
+int gameA_optionsDialog = c_invalidDialogId;
+int[4] gameA_prestigeButtons;
+int[4] gameA_difficultyButtons;
+int[4] gameA_masteryPresetButtons;
+int gameA_masteryButton = c_invalidDialogControlId;
+trigger gameA_prestigeTrigger;
+trigger gameA_difficultyTrigger;
+trigger gameA_masteryTrigger;
+trigger gameA_masteryAcceptedTrigger;
+trigger gameA_masteryLevelUpTrigger;
+trigger gameA_masteryLevelDownTrigger;
+trigger gameA_masteryPresetTrigger;
+
+void GameA_PreparationOptionsInit () {
+    gameA_selectedPrestige = 0;
+    gameA_selectedDifficulty = 2;
+    gameA_masteryInitialized = false;
+}
+
+int GameA_PreparationOptionsPrestigeIndex (int control) {
+    int index = 0;
+    int result = -1;
+
+    while (index < 4) {
+        if (control == gameA_prestigeButtons[index]) {
+            result = index;
+        }
+        index += 1;
+    }
+    return result;
+}
+
+int GameA_PreparationOptionsDifficultyIndex (int control) {
+    int index = 0;
+    int result = -1;
+
+    while (index < 4) {
+        if (control == gameA_difficultyButtons[index]) {
+            result = index + 1;
+        }
+        index += 1;
+    }
+    return result;
+}
+
+void GameA_PreparationOptionsUpdate () {
+    int index = 0;
+
+    while (index < 4) {
+        DialogControlSetPropertyAsColor(gameA_prestigeButtons[index], c_triggerControlPropertyColor, PlayerGroupAll(), Color(255, 255, 255));
+        DialogControlSetPropertyAsColor(gameA_difficultyButtons[index], c_triggerControlPropertyColor, PlayerGroupAll(), Color(255, 255, 255));
+        if (index == gameA_selectedPrestige) {
+            DialogControlSetPropertyAsColor(gameA_prestigeButtons[index], c_triggerControlPropertyColor, PlayerGroupAll(), Color(80, 190, 255));
+        }
+        if (index + 1 == gameA_selectedDifficulty) {
+            DialogControlSetPropertyAsColor(gameA_difficultyButtons[index], c_triggerControlPropertyColor, PlayerGroupAll(), Color(80, 190, 255));
+        }
+        index += 1;
+    }
+}
+
+void GameA_PreparationOptionsUpdatePrestigeTooltips (string commanderId) {
+    int index = 0;
+    string commanderData = libCOOC_gf_CC_CommanderData(commanderId);
+    string prestigeFace;
+
+    while (index < 4) {
+        prestigeFace = libCOOC_gf_CC_CommanderPrestigeIndexFace(commanderData, index);
+        libNtve_gf_SetDialogItemTooltip(gameA_prestigeButtons[index], libCOOC_gf_TooltipTextofButton(1, prestigeFace), PlayerGroupAll());
+        index += 1;
+    }
+}
+
+void GameA_PreparationOptionsCommanderChanged (string commanderId) {
+    libCOOC_gv_cC_DevStart_Forced = true;
+    libCOOC_gf_CC_PlayerCommanderSet(1, commanderId);
+    PlayerSetRace(1, libCOOC_gf_CC_CommanderRace(commanderId));
+    libCOOC_gf_CC_PlayerExperienceSetToLevel(1, 15, commanderId);
+    libCOOC_gf_CC_SetPlayerPrestigeIndex(1, gameA_selectedPrestige);
+    libCOOC_gf_CC_PlayerMasteryEnabledSet(1, true);
+    if (!gameA_masteryInitialized) {
+        libCOOC_gf_CC_PlayerMasteryLevelSet(1, 180);
+        gameA_masteryInitialized = true;
+    }
+    DialogControlSetEnabled(gameA_masteryButton, PlayerGroupAll(), true);
+    GameA_PreparationOptionsUpdatePrestigeTooltips(commanderId);
+}
+
+void GameA_PreparationOptionsApplyDifficulty () {
+    // Blizzard's co-op scripts use players 3/4 as the difficulty carriers for
+    // commander players 1/2. The host mission also owns its enemy AI with those
+    // player slots, so all four must agree before common mission initialization.
+    PlayerSetDifficulty(1, gameA_selectedDifficulty);
+    PlayerSetDifficulty(2, gameA_selectedDifficulty);
+    PlayerSetDifficulty(3, gameA_selectedDifficulty);
+    PlayerSetDifficulty(4, gameA_selectedDifficulty);
+}
+
+void GameA_PreparationOptionsApply () {
+    libCOOC_gf_CC_SetPlayerPrestigeIndex(1, gameA_selectedPrestige);
+    libCOOC_gf_CC_PlayerMasteryEnabledSet(1, true);
+    GameA_PreparationOptionsApplyDifficulty();
+}
+
+void GameA_PreparationOptionsApplyAfterMissionInit () {
+    // Blizzard's local mission initialization copies the fixed test-config
+    // difficulty from players 3/4 back to commander players 1/2. Restore the
+    // preparation-page choice before the host map calculates mission values.
+    GameA_PreparationOptionsApplyDifficulty();
+
+    GameSetSpeedLocked(true);
+    if (gameA_selectedDifficulty >= 3) {
+        GameSetSpeedValue(c_gameSpeedFaster);
+    }
+    else {
+        GameSetSpeedValue(c_gameSpeedFast);
+    }
+
+    libCOMI_gf_CM_DifficultyApplySettings(1);
+    libCOMI_gf_CM_DifficultyApplySettings(2);
+
+    // Game A bypasses Blizzard's commander-selection page, which normally
+    // creates the lower-right prestige summary after applying commander tech.
+    libCOUI_gf_CU_PrestigeBriefInit(1, 2);
+}
+
+bool GameA_PreparationOptionsOnPrestige (bool testConds, bool runActions) {
+    int selected;
+
+    selected = GameA_PreparationOptionsPrestigeIndex(EventDialogControl());
+    if (testConds && selected < 0) {
+        return false;
+    }
+    if (!runActions) {
+        return true;
+    }
+    gameA_selectedPrestige = selected;
+    libCOOC_gf_CC_SetPlayerPrestigeIndex(1, gameA_selectedPrestige);
+    GameA_PreparationOptionsUpdate();
+    return true;
+}
+
+bool GameA_PreparationOptionsOnDifficulty (bool testConds, bool runActions) {
+    int selected;
+
+    selected = GameA_PreparationOptionsDifficultyIndex(EventDialogControl());
+    if (testConds && selected < 1) {
+        return false;
+    }
+    if (!runActions) {
+        return true;
+    }
+    gameA_selectedDifficulty = selected;
+    GameA_PreparationOptionsApplyDifficulty();
+    GameA_PreparationOptionsUpdate();
+    return true;
+}
+
+void GameA_PreparationOptionsUpdateMasteryPresetButtons () {
+    int index = 0;
+
+    while (index < 4) {
+        DialogControlSetPropertyAsColor(gameA_masteryPresetButtons[index], c_triggerControlPropertyColor, PlayerGroupAll(), Color(255, 255, 255));
+        if (libCOUI_gv_cU_MasteryLevelCurrent[1] == 90 + index * 30) {
+            DialogControlSetPropertyAsColor(gameA_masteryPresetButtons[index], c_triggerControlPropertyColor, PlayerGroupAll(), Color(80, 190, 255));
+        }
+        index += 1;
+    }
+}
+
+bool GameA_PreparationOptionsOnMasteryPreset (bool testConds, bool runActions) {
+    int index = 0;
+    int selectedLevel = -1;
+
+    while (index < 4) {
+        if (EventDialogControl() == gameA_masteryPresetButtons[index]) {
+            selectedLevel = 90 + index * 30;
+        }
+        index += 1;
+    }
+    if (testConds && selectedLevel < 0) {
+        return false;
+    }
+    if (!runActions) {
+        return true;
+    }
+    libCOUI_gv_cU_MasteryLevelCurrent[EventPlayer()] = selectedLevel;
+    libCOUI_gf_CU_MasteryUpdatePoints(EventPlayer());
+    libCOUI_gf_CU_MasteryUpdate(EventPlayer());
+    GameA_PreparationOptionsUpdateMasteryPresetButtons();
+    return true;
+}
+
+void GameA_PreparationOptionsCreateMasteryPresets () {
+    int index = 0;
+
+    if (gameA_masteryPresetsCreated) {
+        return;
+    }
+    gameA_masteryPresetTrigger = TriggerCreate("GameA_PreparationOptionsOnMasteryPreset");
+    while (index < 4) {
+        gameA_masteryPresetButtons[index] = DialogControlCreate(libCOUI_gv_cU_MasteryDialog, c_triggerControlTypeButton);
+        DialogControlSetSize(gameA_masteryPresetButtons[index], PlayerGroupAll(), 58, 32);
+        if (index == 0) {
+            DialogControlSetPositionRelative(gameA_masteryPresetButtons[index], PlayerGroupAll(), c_anchorLeft, libCOUI_gv_cU_MasteryLevelUpButton, c_anchorRight, 12, 0);
+        }
+        else {
+            DialogControlSetPositionRelative(gameA_masteryPresetButtons[index], PlayerGroupAll(), c_anchorLeft, gameA_masteryPresetButtons[index - 1], c_anchorRight, 8, 0);
+        }
+        DialogControlSetPropertyAsText(gameA_masteryPresetButtons[index], c_triggerControlPropertyText, PlayerGroupAll(), IntToText(90 + index * 30));
+        libNtve_gf_SetDialogItemStyle(gameA_masteryPresetButtons[index], "ModCenterSize16", PlayerGroupAll());
+        TriggerAddEventDialogControl(gameA_masteryPresetTrigger, 1, gameA_masteryPresetButtons[index], c_triggerControlEventTypeClick);
+        index += 1;
+    }
+    gameA_masteryPresetsCreated = true;
+}
+
+bool GameA_PreparationOptionsOnMasteryLevelUp (bool testConds, bool runActions) {
+    int player = EventPlayer();
+
+    if (testConds && EventDialogControl() != libCOUI_gv_cU_MasteryLevelUpButton) {
+        return false;
+    }
+    if (!runActions) {
+        return true;
+    }
+    if (libCOUI_gv_cU_MasteryShiftPressed[player]) {
+        libCOUI_gv_cU_MasteryLevelCurrent[player] += 10;
+    }
+    else {
+        libCOUI_gv_cU_MasteryLevelCurrent[player] += 1;
+    }
+    if (libCOUI_gv_cU_MasteryLevelCurrent[player] > 180) {
+        libCOUI_gv_cU_MasteryLevelCurrent[player] = 180;
+    }
+    libCOUI_gf_CU_MasteryUpdatePoints(player);
+    libCOUI_gf_CU_MasteryUpdate(player);
+    GameA_PreparationOptionsUpdateMasteryPresetButtons();
+    return true;
+}
+
+bool GameA_PreparationOptionsOnMasteryLevelDown (bool testConds, bool runActions) {
+    int player = EventPlayer();
+
+    if (testConds && EventDialogControl() != libCOUI_gv_cU_MasteryLevelDownButton) {
+        return false;
+    }
+    if (!runActions) {
+        return true;
+    }
+    if (libCOUI_gv_cU_MasteryShiftPressed[player]) {
+        libCOUI_gv_cU_MasteryLevelCurrent[player] -= 10;
+    }
+    else {
+        libCOUI_gv_cU_MasteryLevelCurrent[player] -= 1;
+    }
+    if (libCOUI_gv_cU_MasteryLevelCurrent[player] < 0) {
+        libCOUI_gv_cU_MasteryLevelCurrent[player] = 0;
+    }
+    libCOUI_gf_CU_MasteryUpdatePoints(player);
+    libCOUI_gf_CU_MasteryUpdate(player);
+    GameA_PreparationOptionsUpdateMasteryPresetButtons();
+    return true;
+}
+
+bool GameA_PreparationOptionsOnMastery (bool testConds, bool runActions) {
+    if (testConds && EventDialogControl() != gameA_masteryButton) {
+        return false;
+    }
+    if (!runActions) {
+        return true;
+    }
+    DialogSetVisible(gameA_optionsDialog, PlayerGroupSingle(1), false);
+    libCOUI_gf_CU_MasteryDisplay(1);
+    GameA_PreparationOptionsCreateMasteryPresets();
+    GameA_PreparationOptionsUpdateMasteryPresetButtons();
+    TriggerEnable(libCOUI_gt_CU_MasteryLevelUpPressed, false);
+    TriggerEnable(libCOUI_gt_CU_MasteryLevelDownPressed, false);
+    TriggerEnable(gameA_masteryLevelUpTrigger, true);
+    TriggerEnable(gameA_masteryLevelDownTrigger, true);
+    return true;
+}
+
+bool GameA_PreparationOptionsOnMasteryAccepted (bool testConds, bool runActions) {
+    if (testConds && EventDialogControl() != libCOUI_gv_cU_MasteryAcceptButton) {
+        return false;
+    }
+    if (!runActions) {
+        return true;
+    }
+    TriggerEnable(gameA_masteryLevelUpTrigger, false);
+    TriggerEnable(gameA_masteryLevelDownTrigger, false);
+    DialogSetVisible(gameA_optionsDialog, PlayerGroupSingle(1), true);
+    return true;
+}
+
+void GameA_PreparationOptionsCreateControls (int dialog) {
+    int label;
+    int index = 0;
+
+    gameA_optionsDialog = dialog;
+
+    label = DialogControlCreate(dialog, c_triggerControlTypeLabel);
+    DialogControlSetSize(label, PlayerGroupAll(), 270, 30);
+    DialogControlSetPosition(label, PlayerGroupAll(), c_anchorTopLeft, 790, 205);
+    DialogControlSetPropertyAsText(label, c_triggerControlPropertyText, PlayerGroupAll(), StringExternal("GameA/Preparation/PrestigeTitle"));
+
+    gameA_prestigeTrigger = TriggerCreate("GameA_PreparationOptionsOnPrestige");
+    while (index < 4) {
+        gameA_prestigeButtons[index] = DialogControlCreate(dialog, c_triggerControlTypeButton);
+        DialogControlSetSize(gameA_prestigeButtons[index], PlayerGroupAll(), 125, 44);
+        DialogControlSetPosition(gameA_prestigeButtons[index], PlayerGroupAll(), c_anchorTopLeft, 790 + (index % 2) * 135, 240 + (index / 2) * 52);
+        DialogControlSetPropertyAsText(gameA_prestigeButtons[index], c_triggerControlPropertyText, PlayerGroupAll(), StringToText("P" + IntToString(index)));
+        libNtve_gf_SetDialogItemStyle(gameA_prestigeButtons[index], "ModCenterSize16", PlayerGroupAll());
+        TriggerAddEventDialogControl(gameA_prestigeTrigger, 1, gameA_prestigeButtons[index], c_triggerControlEventTypeClick);
+        index += 1;
+    }
+
+    label = DialogControlCreate(dialog, c_triggerControlTypeLabel);
+    DialogControlSetSize(label, PlayerGroupAll(), 270, 30);
+    DialogControlSetPosition(label, PlayerGroupAll(), c_anchorTopLeft, 790, 350);
+    DialogControlSetPropertyAsText(label, c_triggerControlPropertyText, PlayerGroupAll(), StringExternal("GameA/Preparation/MasteryTitle"));
+
+    gameA_masteryButton = DialogControlCreate(dialog, c_triggerControlTypeButton);
+    DialogControlSetSize(gameA_masteryButton, PlayerGroupAll(), 260, 48);
+    DialogControlSetPosition(gameA_masteryButton, PlayerGroupAll(), c_anchorTopLeft, 790, 385);
+    DialogControlSetPropertyAsText(gameA_masteryButton, c_triggerControlPropertyText, PlayerGroupAll(), StringExternal("GameA/Preparation/MasteryButton"));
+    libNtve_gf_SetDialogItemStyle(gameA_masteryButton, "ModCenterSize16", PlayerGroupAll());
+    DialogControlSetEnabled(gameA_masteryButton, PlayerGroupAll(), false);
+    gameA_masteryTrigger = TriggerCreate("GameA_PreparationOptionsOnMastery");
+    TriggerAddEventDialogControl(gameA_masteryTrigger, 1, gameA_masteryButton, c_triggerControlEventTypeClick);
+    gameA_masteryAcceptedTrigger = TriggerCreate("GameA_PreparationOptionsOnMasteryAccepted");
+    TriggerAddEventDialogControl(gameA_masteryAcceptedTrigger, 1, c_invalidDialogControlId, c_triggerControlEventTypeClick);
+    gameA_masteryLevelUpTrigger = TriggerCreate("GameA_PreparationOptionsOnMasteryLevelUp");
+    TriggerEnable(gameA_masteryLevelUpTrigger, false);
+    TriggerAddEventDialogControl(gameA_masteryLevelUpTrigger, c_playerAny, c_invalidDialogControlId, c_triggerControlEventTypeClick);
+    gameA_masteryLevelDownTrigger = TriggerCreate("GameA_PreparationOptionsOnMasteryLevelDown");
+    TriggerEnable(gameA_masteryLevelDownTrigger, false);
+    TriggerAddEventDialogControl(gameA_masteryLevelDownTrigger, c_playerAny, c_invalidDialogControlId, c_triggerControlEventTypeClick);
+
+    label = DialogControlCreate(dialog, c_triggerControlTypeLabel);
+    DialogControlSetSize(label, PlayerGroupAll(), 270, 30);
+    DialogControlSetPosition(label, PlayerGroupAll(), c_anchorTopLeft, 790, 450);
+    DialogControlSetPropertyAsText(label, c_triggerControlPropertyText, PlayerGroupAll(), StringExternal("GameA/Preparation/DifficultyTitle"));
+
+    index = 0;
+    gameA_difficultyTrigger = TriggerCreate("GameA_PreparationOptionsOnDifficulty");
+    while (index < 4) {
+        gameA_difficultyButtons[index] = DialogControlCreate(dialog, c_triggerControlTypeButton);
+        DialogControlSetSize(gameA_difficultyButtons[index], PlayerGroupAll(), 125, 44);
+        DialogControlSetPosition(gameA_difficultyButtons[index], PlayerGroupAll(), c_anchorTopLeft, 790 + (index % 2) * 135, 485 + (index / 2) * 52);
+        DialogControlSetPropertyAsText(gameA_difficultyButtons[index], c_triggerControlPropertyText, PlayerGroupAll(), DifficultyName(index + 1));
+        libNtve_gf_SetDialogItemStyle(gameA_difficultyButtons[index], "ModCenterSize16", PlayerGroupAll());
+        TriggerAddEventDialogControl(gameA_difficultyTrigger, 1, gameA_difficultyButtons[index], c_triggerControlEventTypeClick);
+        index += 1;
+    }
+
+    GameA_PreparationOptionsUpdate();
+}

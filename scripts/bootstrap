@@ -1,0 +1,73 @@
+#!/usr/bin/env sh
+set -eu
+
+node_version="24.18.0"
+pnpm_version="10.33.0"
+opencode_version="1.18.8"
+opencode_sha256="0fb2e11a819dd97949f0f7e0348e0e0c4fd8c42b3a5ed7aee1f0d437c94b9f0c"
+
+script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+project_root=$(CDPATH= cd -- "$script_dir/.." && pwd)
+tools_dir="$project_root/.tools"
+node_dir="$tools_dir/node"
+pnpm_dir="$tools_dir/pnpm"
+opencode_dir="$tools_dir/opencode/bin"
+
+platform=$(uname -s)
+architecture=$(uname -m)
+
+if [ "$platform" != "Darwin" ] || [ "$architecture" != "arm64" ]; then
+  echo "bootstrap currently supports macOS arm64 only." >&2
+  echo "Windows bootstrap will be added with the Windows packaging milestone." >&2
+  exit 1
+fi
+
+temp_dir=$(mktemp -d)
+trap 'rm -rf "$temp_dir"' EXIT
+
+if [ ! -x "$node_dir/bin/node" ]; then
+  node_archive="node-v${node_version}-darwin-arm64.tar.gz"
+  curl -fsSL "https://nodejs.org/dist/v${node_version}/SHASUMS256.txt" \
+    -o "$temp_dir/SHASUMS256.txt"
+  curl -fsSL "https://nodejs.org/dist/v${node_version}/${node_archive}" \
+    -o "$temp_dir/$node_archive"
+
+  expected_node_sha=$(awk -v archive="$node_archive" '$2 == archive {print $1}' "$temp_dir/SHASUMS256.txt")
+  actual_node_sha=$(shasum -a 256 "$temp_dir/$node_archive" | awk '{print $1}')
+  if [ -z "$expected_node_sha" ] || [ "$expected_node_sha" != "$actual_node_sha" ]; then
+    echo "Node.js checksum verification failed." >&2
+    exit 1
+  fi
+
+  mkdir -p "$node_dir"
+  tar -xzf "$temp_dir/$node_archive" --strip-components=1 -C "$node_dir"
+fi
+
+export PATH="$node_dir/bin:$PATH"
+
+if [ ! -x "$pnpm_dir/node_modules/.bin/pnpm" ]; then
+  npm install --prefix "$pnpm_dir" "pnpm@$pnpm_version"
+fi
+
+if [ ! -x "$opencode_dir/opencode" ]; then
+  opencode_archive="opencode-darwin-arm64.zip"
+  curl -fL \
+    "https://github.com/anomalyco/opencode/releases/download/v${opencode_version}/${opencode_archive}" \
+    -o "$temp_dir/$opencode_archive"
+
+  actual_opencode_sha=$(shasum -a 256 "$temp_dir/$opencode_archive" | awk '{print $1}')
+  if [ "$opencode_sha256" != "$actual_opencode_sha" ]; then
+    echo "OpenCode checksum verification failed." >&2
+    exit 1
+  fi
+
+  mkdir -p "$opencode_dir"
+  unzip -q "$temp_dir/$opencode_archive" -d "$opencode_dir"
+fi
+
+export CI=true
+"$pnpm_dir/node_modules/.bin/pnpm" install
+
+echo
+echo "CoopAgent development environment is ready."
+echo "Run: ./scripts/dev"

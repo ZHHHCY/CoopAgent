@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "galaxy": {
+    "modules": [
+      {
+        "path": "Base.SC2Data/GameAIntegration.galaxy",
+        "order": 100
+      },
+      {
+        "path": "Base.SC2Data/Generated/CommanderPreparation.galaxy",
+        "order": 210,
+        "init": "GameA_AllCommandersInit"
+      },
+      {
+        "path": "Base.SC2Data/Generated/PreparationOptions.galaxy",
+        "order": 215,
+        "init": "GameA_PreparationOptionsInit",
+        "beforeMissionStart": "GameA_PreparationOptionsRestoreDifficultyAfterMissionInit"
+      },
+      {
+        "path": "Base.SC2Data/Generated/MutatorSelection.galaxy",
+        "order": 216,
+        "init": "GameA_MutatorSelectionInit"
+      },
+      {
+        "path": "Base.SC2Data/Generated/TestMode.galaxy",
+        "order": 217,
+        "init": "GameA_TestModeInit",
+        "configure": "GameA_TestModeConfigureProduction"
+      }
+    ],
+    "core": "Base.SC2Data/GameACore.galaxy"
+  },
+  "copyRoots": []
+}

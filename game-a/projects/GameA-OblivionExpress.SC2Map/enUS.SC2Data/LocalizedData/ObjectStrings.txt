@@ -1,0 +1,3 @@
+﻿Light/EditorPrefix/CoopTHorner01=(Coop)
+Light/Name/CoopTHorner01=THorner01
+Light/Name/EditorTestLight=Default

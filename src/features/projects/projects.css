@@ -1,0 +1,10 @@
+.project-shell { height: 100vh; display: flex; flex-direction: column; }
+.project-shell > .app-shell { flex: 1; min-height: 0; height: auto; }
+.project-toolbar { display: flex; gap: 10px; align-items: center; padding: 9px 16px; background: #111b24; border-bottom: 1px solid #34414c; color: #d4e1eb; font-size: 13px; }
+.project-toolbar select, .project-toolbar button, .project-modal button, .project-modal input { background: #1c2a36; color: #e5eef5; border: 1px solid #425665; border-radius: 5px; padding: 6px 10px; }
+.project-toolbar select { min-width: 180px; margin-left: 8px; }
+.project-toolbar [role=alert], .project-modal [role=alert] { color: #f3b1a1; }
+.project-modal { position: fixed; inset: 0; z-index: 100; background: #0009; display: grid; place-items: center; }
+.project-modal form { background: #15222e; color: #e5eef5; padding: 24px; border-radius: 12px; width: min(480px, 90vw); display: grid; gap: 16px; }
+.project-modal label { display: grid; gap: 8px; }
+.project-modal form > div { display: flex; justify-content: end; gap: 10px; }

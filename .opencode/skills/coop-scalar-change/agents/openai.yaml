@@ -1,0 +1,4 @@
+interface:
+  display_name: "合作模式数值修改"
+  short_description: "为合作指挥官生成可查询、可审核、可重放的确定性数值修改计划"
+  default_prompt: "使用 $coop-scalar-change：先确定目标 ID，按对象参数导航定位字段，必要时查字段说明；证据足够后计算、预检并提交最小修改，逐项核对结果。纯查询不提交修改。"

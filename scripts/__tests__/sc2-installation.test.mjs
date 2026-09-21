@@ -1,0 +1,103 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtemp, mkdir, writeFile, readFile, cp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { spawnSync } from 'node:child_process';
+
+const repo = fileURLToPath(new URL('../../', import.meta.url));
+const windows = { skip: process.platform !== 'win32' };
+async function fixture(t) {
+  const base = await mkdtemp(path.join(tmpdir(), 'coop-sc2-setup-'));
+  t.after(() => rm(base, { recursive: true, force: true }));
+  const root = path.join(base, '游戏安装 StarCraft II');
+  for (const dir of ['SC2Data/data', 'SC2Data/indices', 'Versions/Base97579']) await mkdir(path.join(root, dir), { recursive: true });
+  for (const file of ['.build.info', 'StarCraft II.exe', 'StarCraft II Editor_x64.exe', 'Versions/Base97579/SC2_x64.exe']) await writeFile(path.join(root, file), 'fixture');
+  return { base, root, config: path.join(base, 'config/CoopAgent/sc2-installation.json'), env: { ...process.env, APPDATA: path.join(base, 'config'), COOPAGENT_SC2_ROOT: '' } };
+}
+function run(f, script, args = []) {
+  return spawnSync('powershell.exe', ['-NoLogo', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', script, ...args], { env: f.env, encoding: 'utf8', timeout: 30000 });
+}
+const configure = path.join(repo, 'scripts/configure-sc2.ps1');
+
+test('setup persists folder or nested executable to the desktop config and reuses the choice', windows, async t => {
+  const f = await fixture(t);
+  for (const selected of [f.root, path.join(f.root, 'Versions/Base97579/SC2_x64.exe'), path.join(f.root, 'StarCraft II.exe')]) {
+    const result = run(f, configure, ['-StarCraftRoot', selected, '-NonInteractive']);
+    assert.equal(result.status, 0, result.stderr);
+    assert.deepEqual(JSON.parse(await readFile(f.config, 'utf8')), { rootPath: f.root });
+  }
+  assert.equal(run(f, configure, ['-NonInteractive']).status, 0);
+  const helper = path.join(repo, 'scripts/lib/sc2-installation.ps1');
+  const reader = path.join(f.base, 'read-saved.ps1');
+  await writeFile(reader, `. '${helper.replaceAll("'", "''")}'; [IO.File]::WriteAllText('${path.join(f.base, 'read.txt').replaceAll("'", "''")}', (Get-CoopSc2SavedRoot))`);
+  assert.equal(run(f, reader).status, 0);
+  assert.equal(await readFile(path.join(f.base, 'read.txt'), 'utf8'), f.root);
+});
+
+test('invalid selection does not replace a valid saved installation; missing config cannot silently pass', windows, async t => {
+  const f = await fixture(t);
+  assert.notEqual(run(f, configure, ['-NonInteractive']).status, 0);
+  assert.equal(run(f, configure, ['-StarCraftRoot', f.root, '-NonInteractive']).status, 0);
+  const saved = await readFile(f.config, 'utf8');
+  await rm(path.join(f.root, 'SC2Data/indices'), { recursive: true });
+  for (const args of [['-StarCraftRoot', f.root, '-NonInteractive'], ['-NonInteractive']]) {
+    assert.notEqual(run(f, configure, args).status, 0);
+    assert.equal(await readFile(f.config, 'utf8'), saved);
+  }
+});
+
+test('preparation uses the selected install and this extraction; bootstrap failure stops downstream work', windows, async t => {
+  const f = await fixture(t);
+  const scripts = path.join(f.base, 'scripts');
+  await mkdir(path.join(scripts, 'lib'), { recursive: true });
+  for (const file of ['configure-sc2.ps1', 'prepare-coopagent.ps1', 'lib/sc2-installation.ps1']) await cp(path.join(repo, 'scripts', file), path.join(scripts, file));
+  await writeFile(path.join(scripts, 'bootstrap.cmd'), '@exit /b 0\r\n');
+  await writeFile(path.join(scripts, 'casc-inspect.ps1'), `param([string]$StarCraftRoot,[switch]$NoOpen)
+if ($StarCraftRoot -ne $env:COOPAGENT_SC2_ROOT) { throw 'Wrong installation' }
+[IO.File]::WriteAllText((Join-Path $PSScriptRoot 'observed-root.txt'), $StarCraftRoot)
+$output = Join-Path $PSScriptRoot 'chosen-extraction'
+[IO.Directory]::CreateDirectory($output) | Out-Null
+[IO.File]::WriteAllText((Join-Path $output 'manifest.json'), '{}')
+Write-Output 'extraction progress'
+Write-Output $output
+`);
+  await writeFile(path.join(scripts, 'casc-database.cmd'), '@echo %*> "%~dp0database-args.txt"\r\n@exit /b 0\r\n');
+  const prepare = path.join(scripts, 'prepare-coopagent.ps1');
+  const success = run(f, prepare, ['-StarCraftRoot', f.root]);
+  assert.equal(success.status, 0, success.stderr);
+  assert.equal(await readFile(path.join(scripts, 'observed-root.txt'), 'utf8'), f.root);
+  const args = await readFile(path.join(scripts, 'database-args.txt'), 'utf8');
+  assert.ok(args.includes('build --casc-root'));
+  assert.ok(args.includes(path.join(scripts, 'chosen-extraction')));
+  await rm(path.join(scripts, 'observed-root.txt'));
+  await rm(path.join(scripts, 'database-args.txt'));
+  await writeFile(path.join(scripts, 'bootstrap.cmd'), '@exit /b 7\r\n');
+  const failed = run(f, prepare, ['-StarCraftRoot', f.root]);
+  assert.notEqual(failed.status, 0);
+  assert.ok(failed.stderr.includes('Toolchain preparation failed (7)'), failed.stderr);
+  await assert.rejects(readFile(path.join(scripts, 'observed-root.txt')), { code: 'ENOENT' });
+  await assert.rejects(readFile(path.join(scripts, 'database-args.txt')), { code: 'ENOENT' });
+});
+
+test('standalone CASC inspection reads the shared config and respects explicit and environment overrides', windows, async t => {
+  const f = await fixture(t);
+  const saved = path.join(f.base, 'saved-missing');
+  const environment = path.join(f.base, 'environment-missing');
+  const explicit = path.join(f.base, 'explicit-missing');
+  await mkdir(path.dirname(f.config), { recursive: true });
+  await writeFile(f.config, JSON.stringify({ rootPath: saved }));
+  const inspect = path.join(repo, 'scripts/casc-inspect.ps1');
+  for (const [override, args, expected] of [
+    ['', [], saved],
+    [environment, [], environment],
+    [environment, ['-StarCraftRoot', explicit], explicit],
+  ]) {
+    // Missing folders stop before tool installation or data extraction.
+    f.env.COOPAGENT_SC2_ROOT = override;
+    const result = run(f, inspect, [...args, '-NoOpen']);
+    assert.notEqual(result.status, 0);
+    assert.ok(result.stderr.includes(expected), result.stderr);
+  }
+});

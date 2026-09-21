@@ -1,0 +1,13 @@
+#!/usr/bin/env sh
+set -eu
+
+script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+project_root=$(CDPATH= cd -- "$script_dir/.." && pwd)
+node_bin="$project_root/.tools/node/bin/node"
+
+if [ ! -x "$node_bin" ]; then
+  echo "Bundled Node.js is missing. Run ./scripts/bootstrap first." >&2
+  exit 1
+fi
+
+exec "$node_bin" "$project_root/runtime/coop-mcp/server.mjs"

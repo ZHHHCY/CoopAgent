@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/ZHHHCY/CoopAgent/main/docs/schemas/patch-plan-user-summaries.schema.json",
+  "title": "Historical PatchPlan user summaries",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "formatVersion",
+    "summaries"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "formatVersion": {
+      "const": 1
+    },
+    "summaries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "planId",
+          "text"
+        ],
+        "properties": {
+          "planId": {
+            "$ref": "patch-plan.schema.json#/$defs/id"
+          },
+          "text": {
+            "type": "string",
+            "minLength": 4,
+            "maxLength": 160,
+            "pattern": "^[^\\r\\n]+$"
+          }
+        }
+      }
+    }
+  }
+}

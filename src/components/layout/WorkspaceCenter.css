@@ -1,0 +1,184 @@
+.workspace {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: #203d52;
+  container: workspace / inline-size;
+}
+
+.workspace-tabs {
+  height: 44px;
+  padding: 7px 18px 0;
+  border-bottom: 1px solid #527789;
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  flex: 0 0 44px;
+  background:
+    linear-gradient(180deg, rgba(84, 151, 178, 0.09), transparent),
+    #284b60;
+}
+
+.workspace-tabs button {
+  position: relative;
+  height: 37px;
+  min-width: 122px;
+  padding: 0 18px;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  border-radius: 5px 5px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  color: #88a6b4;
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.045em;
+}
+
+.workspace-tabs button:hover {
+  color: #d5eef5;
+  background: rgba(48, 96, 119, 0.62);
+}
+
+.workspace-tabs button.is-active {
+  border-color: #527789;
+  color: #eefaff;
+  background: #203d52;
+  box-shadow: inset 0 2px #65bdd3;
+}
+
+.workspace-tabs button.is-active::after {
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 1px;
+  background: #203d52;
+  content: "";
+}
+
+.workspace-tabs button svg {
+  color: #69bfd4;
+}
+
+.workspace-view {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.workspace-view[hidden] {
+  display: none;
+}
+
+.database-workspace {
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  display: grid;
+  grid-template-rows: minmax(0, var(--database-upper, 55%)) 9px minmax(0, 1fr);
+  overflow: hidden;
+}
+
+.database-workspace-browser,
+.database-workspace-detail {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.database-workspace-browser > .workspace-reserved {
+  width: 100%;
+  height: 100%;
+}
+
+.database-workspace-splitter {
+  position: relative;
+  z-index: 6;
+  width: 100%;
+  min-width: 0;
+  height: 9px;
+  padding: 0;
+  border: 0;
+  border-top: 1px solid #527789;
+  border-bottom: 1px solid rgba(42, 82, 103, 0.9);
+  display: grid;
+  place-items: center;
+  color: #6f9eaf;
+  background: #183448;
+  cursor: row-resize;
+  touch-action: none;
+}
+
+.database-workspace-splitter > span {
+  width: 42px;
+  height: 3px;
+  border-radius: 2px;
+  background: currentColor;
+  box-shadow: 0 0 7px rgba(101, 189, 211, 0.16);
+}
+
+.database-workspace-splitter:hover,
+.database-workspace-splitter:focus-visible {
+  color: #b6e4ef;
+  background: #21475c;
+}
+
+.database-workspace-detail {
+  background:
+    linear-gradient(180deg, rgba(86, 159, 188, 0.08), transparent 26%),
+    #1b374a;
+}
+
+.database-workspace-detail > .detail-inspector-content {
+  width: 100%;
+  height: 100%;
+  padding: 14px 18px 18px;
+}
+
+.workspace-reserved {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
+  background:
+    linear-gradient(rgba(91, 151, 177, 0.022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(91, 151, 177, 0.022) 1px, transparent 1px),
+    #203d52;
+  background-position: 0 0;
+  background-size: 32px 32px;
+}
+
+.workspace-reserved::before {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(31vw, 340px);
+  aspect-ratio: 1;
+  border: 1px solid rgba(100, 164, 188, 0.055);
+  border-radius: 50%;
+  background: radial-gradient(circle, transparent 42%, rgba(100, 164, 188, 0.035) 42.5%, transparent 43%);
+  box-shadow: 0 0 0 34px rgba(100, 164, 188, 0.01);
+  content: "";
+  opacity: 0.45;
+  transform: translate(-50%, -50%);
+}
+
+.workspace-reserved::after {
+  position: absolute;
+  right: 22px;
+  bottom: 16px;
+  color: rgba(132, 174, 190, 0.2);
+  content: "TACTICAL WORKSPACE  //  STANDBY";
+  font: 8px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.16em;
+}

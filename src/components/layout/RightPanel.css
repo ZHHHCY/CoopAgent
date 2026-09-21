@@ -1,0 +1,60 @@
+.plan-panel {
+  isolation: isolate;
+  padding: 20px 18px 16px;
+  border-left: 1px solid #496d7f;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: inset 10px 0 18px rgba(9, 26, 36, 0.12);
+}
+
+.right-panel-history {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-color: #416f83 transparent;
+  scrollbar-width: thin;
+}
+
+.plan-submission-notice {
+  margin: 10px 0;
+  display: grid;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.plan-error {
+  margin: 0;
+  padding: 9px;
+  border: 1px solid rgba(242, 113, 113, 0.45);
+  border-radius: 3px;
+  color: #ffbaba;
+  background: rgba(6, 23, 31, 0.55);
+  font-size: 11px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.apply-button {
+  width: 100%;
+  height: 32px;
+  border: 0;
+  border-radius: 3px;
+  color: #071820;
+  background: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.apply-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 980px) {
+  .plan-panel {
+    display: none;
+  }
+}

@@ -1,0 +1,327 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/ZHHHCY/CoopAgent/main/docs/schemas/patch-plan.schema.json",
+  "title": "CoopAgent PatchPlan v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "formatVersion",
+    "id",
+    "title",
+    "target",
+    "compatibility",
+    "operations"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "formatVersion": {
+      "const": 1
+    },
+    "id": {
+      "$ref": "#/$defs/id"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "target": {
+      "const": "game-a.core"
+    },
+    "compatibility": {
+      "$ref": "#/$defs/compatibility"
+    },
+    "operations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/$defs/catalogSet"
+          },
+          {
+            "$ref": "#/$defs/catalogRemove"
+          },
+          {
+            "$ref": "#/$defs/galaxySource"
+          },
+          {
+            "$ref": "#/$defs/localeSet"
+          },
+          {
+            "$ref": "#/$defs/filePatch"
+          }
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "compatibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sc2DataBuild",
+        "runtimeContract"
+      ],
+      "properties": {
+        "sc2DataBuild": {
+          "type": "string",
+          "pattern": "^B[0-9]+$"
+        },
+        "runtimeContract": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "opId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "catalog": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Za-z0-9]*$",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "catalogObject": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "catalogPath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 320
+    },
+    "scalar": {
+      "type": [
+        "string",
+        "number",
+        "boolean"
+      ]
+    },
+    "expectedScalar": {
+      "type": [
+        "string",
+        "number",
+        "boolean",
+        "null"
+      ]
+    },
+    "relativePath": {
+      "type": "string",
+      "pattern": "^(?!/)(?![A-Za-z]:)(?!.*\\\\)(?!.*(?:^|/)\\.\\.(?:/|$)).+$",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-fA-F0-9]{64}$"
+    },
+    "catalogSet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "opId",
+        "kind",
+        "catalog",
+        "object",
+        "path",
+        "value"
+      ],
+      "properties": {
+        "opId": {
+          "$ref": "#/$defs/opId"
+        },
+        "kind": {
+          "const": "catalog.set"
+        },
+        "catalog": {
+          "$ref": "#/$defs/catalog"
+        },
+        "object": {
+          "$ref": "#/$defs/catalogObject"
+        },
+        "path": {
+          "$ref": "#/$defs/catalogPath"
+        },
+        "expect": {
+          "$ref": "#/$defs/expectedScalar"
+        },
+        "value": {
+          "$ref": "#/$defs/scalar"
+        }
+      }
+    },
+    "catalogRemove": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "opId",
+        "kind",
+        "catalog",
+        "object",
+        "path"
+      ],
+      "properties": {
+        "opId": {
+          "$ref": "#/$defs/opId"
+        },
+        "kind": {
+          "const": "catalog.remove"
+        },
+        "catalog": {
+          "$ref": "#/$defs/catalog"
+        },
+        "object": {
+          "$ref": "#/$defs/catalogObject"
+        },
+        "path": {
+          "$ref": "#/$defs/catalogPath"
+        },
+        "expect": {
+          "$ref": "#/$defs/expectedScalar"
+        }
+      }
+    },
+    "galaxyRegistration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "order"
+      ],
+      "properties": {
+        "order": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000000
+        },
+        "init": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+          "maxLength": 160
+        }
+      }
+    },
+    "galaxySource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "opId",
+        "kind",
+        "path",
+        "source",
+        "register"
+      ],
+      "properties": {
+        "opId": {
+          "$ref": "#/$defs/opId"
+        },
+        "kind": {
+          "const": "galaxy.source"
+        },
+        "path": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/relativePath"
+            },
+            {
+              "type": "string",
+              "pattern": "^Base\\.SC2Data/.+\\.galaxy$"
+            }
+          ]
+        },
+        "source": {
+          "type": "string",
+          "minLength": 1
+        },
+        "register": {
+          "$ref": "#/$defs/galaxyRegistration"
+        },
+        "expectSha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "localeSet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "opId",
+        "kind",
+        "locale",
+        "key",
+        "value"
+      ],
+      "properties": {
+        "opId": {
+          "$ref": "#/$defs/opId"
+        },
+        "kind": {
+          "const": "locale.set"
+        },
+        "locale": {
+          "type": "string",
+          "pattern": "^[a-z]{2}[A-Z]{2}$"
+        },
+        "key": {
+          "type": "string",
+          "pattern": "^[^=\\r\\n]+$",
+          "minLength": 1,
+          "maxLength": 320
+        },
+        "expect": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "value": {
+          "type": "string",
+          "pattern": "^[^\\r\\n]*$"
+        }
+      }
+    },
+    "filePatch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "opId",
+        "kind",
+        "path",
+        "baseSha256",
+        "patch"
+      ],
+      "properties": {
+        "opId": {
+          "$ref": "#/$defs/opId"
+        },
+        "kind": {
+          "const": "file.patch"
+        },
+        "path": {
+          "$ref": "#/$defs/relativePath"
+        },
+        "baseSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "patch": {
+          "type": "string",
+          "pattern": "^@@ ",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

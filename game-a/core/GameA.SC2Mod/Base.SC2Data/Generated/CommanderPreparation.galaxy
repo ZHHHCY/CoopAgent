@@ -1,0 +1,104 @@
+// Game A preparation-page catalog for every official Allied Commander.
+
+const int gameA_allCommanderCount = 18;
+
+string[18] gameA_allCommanderIds;
+string[18] gameA_allCommanderNameKeys;
+string[18] gameA_allCommanderDetailKeys;
+string[18] gameA_allCommanderPortraitPaths;
+int[18] gameA_allCommanderPortraits;
+int[18] gameA_allCommanderHitTargets;
+
+void GameA_AllCommandersSet (int index, string commanderId, string nameKey, string detailKey, string portraitPath) {
+    gameA_allCommanderIds[index] = commanderId;
+    gameA_allCommanderNameKeys[index] = nameKey;
+    gameA_allCommanderDetailKeys[index] = detailKey;
+    gameA_allCommanderPortraitPaths[index] = portraitPath;
+}
+
+void GameA_AllCommandersInit () {
+    GameA_AllCommandersSet(0, "TerranRaynor", "Commander/Name/Raynor", "GameA/Preparation/RaynorDetails", "Assets\\Textures\\UI_commanderportrait_raynor.dds");
+    GameA_AllCommandersSet(1, "ZergKerrigan", "Commander/Name/Kerrigan", "GameA/Preparation/KerriganDetails", "Assets\\Textures\\UI_commanderportrait_kerrigan.dds");
+    GameA_AllCommandersSet(2, "ProtossArtanis", "Commander/Name/Artanis", "GameA/Preparation/ArtanisDetails", "Assets\\Textures\\UI_commanderportrait_artanis.dds");
+    GameA_AllCommandersSet(3, "TerranSwann", "Commander/Name/Swann", "Commander/Details/Swann", "Assets\\Textures\\UI_commanderportrait_swann.dds");
+    GameA_AllCommandersSet(4, "ZergZagara", "Commander/Name/Zagara", "Commander/Details/Zagara", "Assets\\Textures\\UI_commanderportrait_zagara.dds");
+    GameA_AllCommandersSet(5, "ProtossVorazun", "Commander/Name/Vorazun", "Commander/Details/Vorazun", "Assets\\Textures\\UI_commanderportrait_vorazun.dds");
+    GameA_AllCommandersSet(6, "ProtossKarax", "Commander/Name/Karax", "Commander/Details/Karax", "Assets\\Textures\\UI_commanderportrait_karax.dds");
+    GameA_AllCommandersSet(7, "ZergAbathur", "Commander/Name/Abathur", "Commander/Details/Abathur", "Assets\\Textures\\UI_commanderportrait_abathur.dds");
+    GameA_AllCommandersSet(8, "ProtossAlarak", "Commander/Name/Alarak", "Commander/Details/Alarak", "Assets\\Textures\\UI_commanderportrait_alarak.dds");
+    GameA_AllCommandersSet(9, "TerranNova", "Commander/Name/Nova", "Commander/Details/Nova", "Assets\\Textures\\UI_commanderportrait_nova.dds");
+    GameA_AllCommandersSet(10, "ZergStukov", "Commander/Name/Stukov", "Commander/Details/Stukov", "Assets\\Textures\\UI_commanderportrait_stukov.dds");
+    GameA_AllCommandersSet(11, "ProtossFenix", "Commander/Name/Fenix", "Commander/Details/Fenix", "Assets\\Textures\\UI_commanderportrait_fenix.dds");
+    GameA_AllCommandersSet(12, "ZergDehaka", "Commander/Name/Dehaka", "Commander/Details/Dehaka", "Assets\\Textures\\UI_commanderportrait_dehaka.dds");
+    GameA_AllCommandersSet(13, "TerranHorner", "Commander/Name/Horner", "Commander/Details/Horner", "Assets\\Textures\\UI_CommanderPortrait_HanandHorner.dds");
+    GameA_AllCommandersSet(14, "TerranTychus", "Commander/Name/Tychus", "Commander/Details/Tychus", "Assets\\Textures\\UI_commanderportrait_tychus.dds");
+    GameA_AllCommandersSet(15, "ProtossZeratul", "Commander/Name/Zeratul", "Commander/Details/Zeratul", "Assets\\Textures\\UI_commanderportrait_zeratul.dds");
+    GameA_AllCommandersSet(16, "ZergStetmann", "Commander/Name/Stetmann", "Commander/Details/Stetmann", "Assets\\Textures\\UI_commanderportrait_stetmann.dds");
+    GameA_AllCommandersSet(17, "TerranMengsk", "Commander/Name/Mengsk", "Commander/Details/Mengsk", "Assets\\Textures\\UI_commanderportrait_mengsk.dds");
+}
+
+int GameA_AllCommandersIndexForControl (int control) {
+    int index = 0;
+
+    while (index < gameA_allCommanderCount) {
+        if (control == gameA_allCommanderHitTargets[index]) {
+            return index;
+        }
+        index += 1;
+    }
+    return -1;
+}
+
+string GameA_AllCommandersSelectedId (int control) {
+    int index = GameA_AllCommandersIndexForControl(control);
+    string selectedCommander;
+
+    if (index < 0) {
+        return "";
+    }
+    selectedCommander = gameA_allCommanderIds[index];
+    return selectedCommander;
+}
+
+void GameA_AllCommandersUpdateSelection (string commanderId, int detailsControl) {
+    int index = 0;
+
+    while (index < gameA_allCommanderCount) {
+        DialogControlSetPropertyAsColor(gameA_allCommanderPortraits[index], c_triggerControlPropertyColor, PlayerGroupAll(), Color(170, 170, 170));
+        if (commanderId == gameA_allCommanderIds[index]) {
+            DialogControlSetPropertyAsColor(gameA_allCommanderPortraits[index], c_triggerControlPropertyColor, PlayerGroupAll(), Color(255, 255, 255));
+            DialogControlSetPropertyAsText(detailsControl, c_triggerControlPropertyText, PlayerGroupAll(), StringExternal(gameA_allCommanderDetailKeys[index]));
+        }
+        index += 1;
+    }
+}
+
+void GameA_AllCommandersCreateControls (int dialog, trigger commanderTrigger) {
+    int index = 0;
+    int row;
+    int column;
+    int x;
+    int y;
+
+    while (index < gameA_allCommanderCount) {
+        row = index / 6;
+        column = index - row * 6;
+        x = 70 + column * 120;
+        y = 260 + row * 120;
+
+        gameA_allCommanderPortraits[index] = DialogControlCreate(dialog, c_triggerControlTypeImage);
+        DialogControlSetSize(gameA_allCommanderPortraits[index], PlayerGroupAll(), 112, 112);
+        DialogControlSetPosition(gameA_allCommanderPortraits[index], PlayerGroupAll(), c_anchorTopLeft, x, y);
+        DialogControlSetPropertyAsString(gameA_allCommanderPortraits[index], c_triggerControlPropertyImage, PlayerGroupAll(), gameA_allCommanderPortraitPaths[index]);
+        DialogControlSetPropertyAsText(gameA_allCommanderPortraits[index], c_triggerControlPropertyTooltip, PlayerGroupAll(), StringExternal(gameA_allCommanderDetailKeys[index]));
+
+        gameA_allCommanderHitTargets[index] = DialogControlCreate(dialog, c_triggerControlTypeButton);
+        DialogControlSetSize(gameA_allCommanderHitTargets[index], PlayerGroupAll(), 112, 112);
+        DialogControlSetPosition(gameA_allCommanderHitTargets[index], PlayerGroupAll(), c_anchorTopLeft, x, y);
+        DialogControlSetPropertyAsText(gameA_allCommanderHitTargets[index], c_triggerControlPropertyTooltip, PlayerGroupAll(), StringExternal(gameA_allCommanderDetailKeys[index]));
+        DialogControlFadeTransparency(gameA_allCommanderHitTargets[index], PlayerGroupAll(), 0.0, 100.0);
+
+        TriggerAddEventDialogControl(commanderTrigger, 1, gameA_allCommanderHitTargets[index], c_triggerControlEventTypeClick);
+        index += 1;
+    }
+}

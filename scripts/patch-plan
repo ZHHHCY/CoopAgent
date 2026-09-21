@@ -1,0 +1,9 @@
+#!/bin/sh
+set -eu
+
+PROJECT_ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
+if [ ! -x "$PROJECT_ROOT/.tools/node/bin/node" ]; then
+  "$PROJECT_ROOT/scripts/bootstrap"
+fi
+
+exec "$PROJECT_ROOT/.tools/node/bin/node" "$PROJECT_ROOT/scripts/patch-plan.mjs" "$@"

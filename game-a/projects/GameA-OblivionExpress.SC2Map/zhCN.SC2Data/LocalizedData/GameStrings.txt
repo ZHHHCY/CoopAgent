@@ -1,0 +1,3 @@
+DocInfo/DescLong=Game A 的官方湮灭快车测试工程。
+DocInfo/DescShort=Game A / 湮灭快车
+DocInfo/Name=Game A - 湮灭快车

@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 2,
+  "status": "accepted",
+  "acceptedAt": "2026-08-02T13:47:09+08:00",
+  "sc2": {
+    "version": "5.0.15.97579",
+    "dataBuild": "B97579"
+  },
+  "architecture": {
+    "coreSource": "core/GameA.SC2Mod",
+    "hostSource": "projects/GameA-OblivionExpress.SC2Map",
+    "buildOutput": "build/versions/oblivion-express/GameA-OblivionExpress-Build-{sourceHash12}.SC2Map",
+    "latestBuildPointer": "build/latest/oblivion-express.json",
+    "hostAdapter": "scripts/GameAOblivionExpressAdapter.galaxy",
+    "coreEntry": "GameA_Init",
+    "hostEntry": "GameA_OblivionExpressInit",
+    "coreManifest": "core/GameA.SC2Mod/GameA.Core.json",
+    "hostRegistry": "hosts.json",
+    "generatedBootstrap": "scripts/generated/GameABootstrap.galaxy"
+  },
+  "blockingLogPatterns": [
+    "Script compile error",
+    "无法找到Include文件",
+    "脚本读取失败",
+    "解析函数行出错"
+  ],
+  "triggerErrorMarker": "出现触发器错误",
+  "knownOfflineWarnings": [
+    "Official Allied Commanders StatEvent calls are unavailable in local editor tests."
+  ]
+}

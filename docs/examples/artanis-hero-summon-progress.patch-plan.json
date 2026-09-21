@@ -1,0 +1,58 @@
+{
+  "$schema": "../schemas/patch-plan-v2.schema.json",
+  "formatVersion": 2,
+  "id": "artanis-hero-summon-progress",
+  "title": "阿塔尼斯英雄：召唤与复生进度条",
+  "target": "game-a.core",
+  "compatibility": {
+    "sc2DataBuild": "B97579",
+    "runtimeContract": 2
+  },
+  "dependsOn": [
+    "artanis-hero-unit",
+    "artanis-hero-galaxy-array-fix",
+    "artanis-hero-revival-beacon",
+    "artanis-hero-runtime-spawn-fix",
+    "artanis-hero-visual-fix",
+    "artanis-hero-beacon-identity-fix"
+  ],
+  "conflictsWith": [],
+  "operations": [
+    {
+      "opId": "show-beacon-life-as-summon-progress",
+      "kind": "catalog.set",
+      "catalog": "Actor",
+      "object": "GameAArtanisReviveBeacon",
+      "path": "StatusBarFlags[Life]",
+      "expect": 0,
+      "value": 1
+    },
+    {
+      "opId": "enable-beacon-life-status-bar",
+      "kind": "catalog.set",
+      "catalog": "Actor",
+      "object": "GameAArtanisReviveBeacon",
+      "path": "StatusBarOn[Life]",
+      "expect": null,
+      "value": 1
+    },
+    {
+      "opId": "position-summon-progress-above-hologram",
+      "kind": "catalog.set",
+      "catalog": "Actor",
+      "object": "GameAArtanisReviveBeacon",
+      "path": "BarOffset",
+      "expect": null,
+      "value": 95
+    },
+    {
+      "opId": "size-summon-progress-like-coop-heroes",
+      "kind": "catalog.set",
+      "catalog": "Actor",
+      "object": "GameAArtanisReviveBeacon",
+      "path": "BarWidth",
+      "expect": null,
+      "value": 78
+    }
+  ]
+}

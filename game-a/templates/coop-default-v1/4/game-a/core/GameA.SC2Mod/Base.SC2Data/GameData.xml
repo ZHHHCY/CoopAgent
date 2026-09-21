@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Includes>
+    <Catalog path="GameData/AbilData.xml"/>
+    <Catalog path="GameData/EffectData.xml"/>
+    <Catalog path="GameData/UnitData.xml"/>
+    <Catalog path="GameData/ActorData.xml"/>
+    <Catalog path="GameData/UpgradeData.xml"/>
+    <Catalog path="GameData/RequirementData.xml"/>
+    <Catalog path="GameData/ButtonData.xml"/>
+    <Catalog path="GameData/WeaponData.xml"/>
+</Includes>

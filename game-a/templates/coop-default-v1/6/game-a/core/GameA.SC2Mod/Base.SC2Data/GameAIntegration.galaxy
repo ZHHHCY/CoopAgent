@@ -1,0 +1,64 @@
+// Shared bridge between Game A and Blizzard's Allied Commanders mod.
+// The map depends on Blizzard's mod directly so the editor retains every official
+// catalog and asset; only its Blizzard-only offline startup path is replaced here.
+
+void GameAI_PrepareCommonState (string mapId) {
+    int player;
+    playergroup allPlayers;
+    playergroup commanderPlayers;
+
+    libCOOC_gv_cC_DebugPlaytestMode = GameIsOnline();
+    libCOOC_gf_SetCurrentMap(mapId);
+    UserDataSetInt("Maps", libCOOC_gf_CC_MapUserDataInstance(mapId), "IsCurrent", 1, 1);
+    libCOOC_gf_CC_CampaignPreload();
+    TransmissionSetOption(c_transmissionOptionHideAlertPanel, true);
+
+    allPlayers = PlayerGroupAll();
+    player = -1;
+    while (true) {
+        player = PlayerGroupNextPlayer(allPlayers, player);
+        if (player < 0) {
+            break;
+        }
+        if (PlayerType(player) != c_playerTypeUser) {
+            PlayerSetState(player, c_playerStateDisplayInLeaderPanel, false);
+            PlayerSetState(player, c_playerStateDisplayInViewMenu, false);
+            PlayerSetState(player, c_playerStateShowScore, false);
+        }
+        PlayerSetState(player, c_playerStateContinueEnabled, false);
+    }
+
+    UISetGameMenuItemVisible(PlayerGroupAll(), c_gameMenuDialogRestartButton, false);
+    UISetGameMenuItemVisible(PlayerGroupAll(), c_gameMenuDialogAbortButton, false);
+
+    commanderPlayers = libCOOC_gf_CommanderPlayers();
+    player = -1;
+    while (true) {
+        player = PlayerGroupNextPlayer(commanderPlayers, player);
+        if (player < 0) {
+            break;
+        }
+        TechTreeUpgradeAddLevel(player, "PlayerCommander", 1);
+        libCOOC_gf_CC_ApplyTech(player);
+    }
+
+    libCOOC_gf_CC_InitNonDefeatedPlayers();
+    libCOOC_gf_CC_ScoreInit();
+    TriggerEnable(libCOOC_gt_CC_PrestigeUpgradeSupplement, true);
+}
+
+void GameAI_LoadCoopMission (string mapId, trigger missionStartTrigger) {
+    // Keep the official mission initialization callback. It creates commander bases,
+    // heroes, mission UI, AI and finally invokes the map's loading-complete trigger.
+    libCOMI_gf_CoopPresetCommanderAndTeam();
+    libCOMI_gv_cM_CampaignMissionStartTrigger = missionStartTrigger;
+
+    GameAI_PrepareCommonState(mapId);
+
+    // The official offline commander dialog normally performs these unpauses before
+    // handing control to the mission. Game A already supplied its own preparation page.
+    GameSetMissionTimePaused(false);
+    AITimePause(false);
+    UnitPauseAll(false);
+    TriggerExecute(libCOMI_gt_CM_CampaignMissionInitialize, true, false);
+}

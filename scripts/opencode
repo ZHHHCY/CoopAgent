@@ -1,0 +1,13 @@
+#!/usr/bin/env sh
+set -eu
+
+script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+project_root=$(CDPATH= cd -- "$script_dir/.." && pwd)
+
+if [ ! -x "$project_root/.tools/opencode/bin/opencode" ]; then
+  "$script_dir/bootstrap"
+fi
+
+export PATH="$project_root/.tools/node/bin:$PATH"
+cd "$project_root"
+exec "$project_root/.tools/opencode/bin/opencode" "$@"

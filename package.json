@@ -1,0 +1,55 @@
+{
+  "name": "coopagent",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "check": "tsc --noEmit",
+    "test:ui": "vitest run",
+    "agent:test": "node scripts/agent-test.mjs",
+    "test:agent-interface": "node --test scripts/__tests__/agent-test-interface.test.mjs",
+    "test:mechanisms": "node --test scripts/__tests__/game-a-commander-compat.test.mjs scripts/__tests__/sc2-catalog-probe.test.mjs scripts/__tests__/sc2-mechanism-probe.test.mjs",
+    "database:build": "node --max-old-space-size=8192 scripts/casc-database.mjs build",
+    "patch-plan": "node scripts/patch-plan.mjs",
+    "test:database": "node --test scripts/__tests__/casc-database.test.mjs scripts/__tests__/catalog-merge.test.mjs scripts/__tests__/galaxy-symbols.test.mjs scripts/__tests__/engine-catalog-store.test.mjs scripts/__tests__/sc2-catalog-probe.test.mjs && python -m unittest scripts/__tests__/casc_inspect_test.py",
+    "test:semantics": "node --test scripts/__tests__/coop-semantics.test.mjs scripts/__tests__/coop-profile-rules.test.mjs scripts/__tests__/field-vocabulary.test.mjs",
+    "test:patch-plan": "node --test scripts/__tests__/patch-plan-executor.test.mjs scripts/__tests__/game-a-transaction.test.mjs scripts/__tests__/pending-plan.test.mjs scripts/__tests__/plan-submission.test.mjs",
+    "test:agent-core": "node --test runtime/coop-mcp/__tests__/*.test.mjs",
+    "test:scalar": "node --test runtime/coop-mcp/__tests__/*.test.mjs scripts/__tests__/agent-profile.test.mjs scripts/__tests__/agent-harness.test.mjs scripts/__tests__/agent-task.test.mjs scripts/__tests__/blind-fixture.test.mjs scripts/__tests__/patch-plan-executor.test.mjs scripts/__tests__/game-a-transaction.test.mjs scripts/__tests__/pending-plan.test.mjs scripts/__tests__/plan-submission.test.mjs",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "test:projects": "node --test scripts/__tests__/project-workspaces.test.mjs scripts/__tests__/project-opencode.test.mjs",
+    "test:projects:local": "node scripts/project-workspaces-smoke.mjs"
+  },
+  "dependencies": {
+    "@fontsource/rajdhani": "^5.3.0",
+    "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-dialog": "^2",
+    "@tauri-apps/plugin-opener": "^2",
+    "@xmldom/xmldom": "0.9.10",
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/xterm": "^6.0.0",
+    "ajv": "8.20.0",
+    "lucide-react": "^0.468.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@vitejs/plugin-react": "^4.6.0",
+    "jsdom": "30.0.1",
+    "typescript": "~5.8.3",
+    "vite": "^7.0.4",
+    "vitest": "5.0.0"
+  }
+}

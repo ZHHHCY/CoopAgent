@@ -1,0 +1,214 @@
+// Optional Game A test mode for rapid gameplay iteration.
+
+bool gameA_testModeEnabled = false;
+bool gameA_testModeInitialized = false;
+int gameA_testModeButton = c_invalidDialogControlId;
+trigger gameA_testModeButtonTrigger;
+trigger gameA_testModeConstructTrigger;
+
+void GameA_TestModeUpdateButton () {
+    if (gameA_testModeEnabled) {
+        DialogControlSetPropertyAsText(gameA_testModeButton, c_triggerControlPropertyText, PlayerGroupAll(), StringExternal("GameA/Preparation/TestModeOn"));
+        DialogControlSetPropertyAsColor(gameA_testModeButton, c_triggerControlPropertyColor, PlayerGroupAll(), Color(80, 190, 255));
+    }
+    else {
+        DialogControlSetPropertyAsText(gameA_testModeButton, c_triggerControlPropertyText, PlayerGroupAll(), StringExternal("GameA/Preparation/TestModeOff"));
+        DialogControlSetPropertyAsColor(gameA_testModeButton, c_triggerControlPropertyColor, PlayerGroupAll(), Color(255, 255, 255));
+    }
+}
+
+bool GameA_TestModeOnToggle (bool testConds, bool runActions) {
+    if (testConds && EventDialogControl() != gameA_testModeButton) {
+        return false;
+    }
+    if (!runActions) {
+        return true;
+    }
+
+    gameA_testModeEnabled = !gameA_testModeEnabled;
+    GameA_TestModeUpdateButton();
+    return true;
+}
+
+void GameA_TestModeCreateControls (int dialog) {
+    int label;
+
+    label = DialogControlCreate(dialog, c_triggerControlTypeLabel);
+    DialogControlSetSize(label, PlayerGroupAll(), 270, 30);
+    DialogControlSetPosition(label, PlayerGroupAll(), c_anchorTopLeft, 790, 600);
+    DialogControlSetPropertyAsText(label, c_triggerControlPropertyText, PlayerGroupAll(), StringExternal("GameA/Preparation/TestModeTitle"));
+
+    gameA_testModeButton = DialogControlCreate(dialog, c_triggerControlTypeButton);
+    DialogControlSetSize(gameA_testModeButton, PlayerGroupAll(), 260, 48);
+    DialogControlSetPosition(gameA_testModeButton, PlayerGroupAll(), c_anchorTopLeft, 790, 635);
+    libNtve_gf_SetDialogItemStyle(gameA_testModeButton, "ModCenterSize16", PlayerGroupAll());
+    libNtve_gf_SetDialogItemTooltip(gameA_testModeButton, StringExternal("GameA/Preparation/TestModeTooltip"), PlayerGroupAll());
+
+    gameA_testModeButtonTrigger = TriggerCreate("GameA_TestModeOnToggle");
+    TriggerAddEventDialogControl(gameA_testModeButtonTrigger, 1, gameA_testModeButton, c_triggerControlEventTypeClick);
+    GameA_TestModeUpdateButton();
+}
+
+// These types use the test-mode Catalog times, not delayed forced completion.
+bool GameA_TestModeUsesTerranConstruction (string unitType) {
+    return unitType == "Armory"
+        || unitType == "ArmoryMengsk"
+        || unitType == "ArtilleryMengsk"
+        || unitType == "AutomatedRefinery"
+        || unitType == "Barracks"
+        || unitType == "BarracksMengsk"
+        || unitType == "BarracksReactor"
+        || unitType == "BarracksTechLab"
+        || unitType == "BarracksTechReactor"
+        || unitType == "BomberLaunchPad"
+        || unitType == "Bunker"
+        || unitType == "BunkerDepotMengsk"
+        || unitType == "CommandCenter"
+        || unitType == "CommandCenterMengsk"
+        || unitType == "DrakkenLaserDrillCoop"
+        || unitType == "EngineeringBay"
+        || unitType == "EngineeringBayMengsk"
+        || unitType == "Factory"
+        || unitType == "FactoryMengsk"
+        || unitType == "FactoryReactor"
+        || unitType == "FactoryTechLab"
+        || unitType == "FactoryTechReactor"
+        || unitType == "FusionCore"
+        || unitType == "FusionCoreMengsk"
+        || unitType == "GhostAcademy"
+        || unitType == "GhostAcademyMengsk"
+        || unitType == "GhostAcademyNova"
+        || unitType == "HHBomberPlatform"
+        || unitType == "HHCommandCenter"
+        || unitType == "HHGunTower"
+        || unitType == "HHMercCompound"
+        || unitType == "HHMercStarportNoArmy"
+        || unitType == "HHScienceFacility"
+        || unitType == "HHStarport"
+        || unitType == "HiveMindEmulator"
+        || unitType == "KelMorianAutoTurret"
+        || unitType == "KelMorianGrenadeTurret"
+        || unitType == "KelMorianMissileTurret"
+        || unitType == "MercCompound"
+        || unitType == "MissileTurret"
+        || unitType == "MissileTurretMengsk"
+        || unitType == "NovaACLaserTurret"
+        || unitType == "PerditionTurret"
+        || unitType == "PsiDisruptor"
+        || unitType == "Reactor"
+        || unitType == "Refinery"
+        || unitType == "RefineryMengsk"
+        || unitType == "SIArmory"
+        || unitType == "SIBarracks"
+        || unitType == "SIBarracksTechLab"
+        || unitType == "SICivilianStructure"
+        || unitType == "SICommandCenter"
+        || unitType == "SIEngineeringBay"
+        || unitType == "SIFactory"
+        || unitType == "SIFactoryTechLab"
+        || unitType == "SIInfestedBunker"
+        || unitType == "SIMissileTurret"
+        || unitType == "SIRefinery"
+        || unitType == "SIStarport"
+        || unitType == "SIStarportTechLab"
+        || unitType == "SensorTower"
+        || unitType == "Starport"
+        || unitType == "StarportMengsk"
+        || unitType == "StarportReactor"
+        || unitType == "StarportTechLab"
+        || unitType == "StarportTechReactor"
+        || unitType == "SupplyDepot"
+        || unitType == "SupplyDepotDrop"
+        || unitType == "TychusArmory"
+        || unitType == "TychusCommandCenter"
+        || unitType == "TychusEngineeringBay"
+        || unitType == "TychusGhostAcademy"
+        || unitType == "TychusMedivacPlatform"
+        || unitType == "TychusMercCompound"
+        || unitType == "TychusResearchCenter"
+        || unitType == "TychusSCVAutoTurret"
+        || unitType == "VespeneGasDrill";
+}
+
+// Apply before starting units are created so production stock uses the new
+// initial charge times. The startup hook below reasserts the same level.
+void GameA_TestModeConfigureProduction () {
+    int player;
+    playergroup commanders;
+    if (!gameA_testModeEnabled) {
+        return;
+    }
+    commanders = libCOOC_gf_CommanderPlayers();
+    player = -1;
+    while (true) {
+        player = PlayerGroupNextPlayer(commanders, player);
+        if (player < 0) {
+            break;
+        }
+        libNtve_gf_SetUpgradeLevelForPlayer(player, "GameATestModeUnitProduction10", 1);
+    }
+}
+
+void GameA_TestModeApplyStartingEconomy () {
+    int player;
+    playergroup commanders;
+
+    if (!gameA_testModeEnabled) {
+        return;
+    }
+
+    commanders = libCOOC_gf_CommanderPlayers();
+    player = -1;
+    while (true) {
+        player = PlayerGroupNextPlayer(commanders, player);
+        if (player < 0) {
+            break;
+        }
+        // Mission startup has already applied official commander upgrades.
+        // Set, rather than add, the level so repeated calls cannot stack.
+        libNtve_gf_SetUpgradeLevelForPlayer(player, "GameATestModeTerranConstruction10", 1);
+        libNtve_gf_SetUpgradeLevelForPlayer(player, "GameATestModeUnitProduction10", 1);
+        PlayerModifyPropertyInt(player, c_playerPropMinerals, c_playerPropOperSetTo, 5000);
+        PlayerModifyPropertyInt(player, c_playerPropVespene, c_playerPropOperSetTo, 2000);
+        PlayerModifyPropertyInt(player, c_playerPropSuppliesMade, c_playerPropOperSetTo, 200);
+    }
+}
+
+bool GameA_TestModeOnConstructionStarted (bool testConds, bool runActions) {
+    unit building = EventUnitProgressUnit();
+    int owner = UnitGetOwner(building);
+
+    if (testConds && (!gameA_testModeEnabled || !UnitIsValid(building) || !libCOOC_gf_PlayerIsCommander(owner))) {
+        return false;
+    }
+    if (!runActions) {
+        return true;
+    }
+
+    // Warp-trained units also emit construction events. Only buildings may
+    // use the old fast-construction shortcut; units follow their production timer.
+    if (!UnitTypeTestAttribute(EventUnitProgressObjectType(), c_unitAttributeStructure)) {
+        return true;
+    }
+
+    // Terran construction follows its native 10-second build timer.
+    if (GameA_TestModeUsesTerranConstruction(EventUnitProgressObjectType())) {
+        return true;
+    }
+
+    Wait(1.0, c_timeGame);
+    if (gameA_testModeEnabled && UnitIsValid(building) && libCOOC_gf_PlayerIsCommander(UnitGetOwner(building))) {
+        UnitSetProgressComplete(building, c_unitProgressTypeConstruct, 100);
+    }
+    return true;
+}
+
+void GameA_TestModeInit () {
+    if (gameA_testModeInitialized) {
+        return;
+    }
+    gameA_testModeInitialized = true;
+    gameA_testModeEnabled = false;
+    gameA_testModeConstructTrigger = TriggerCreate("GameA_TestModeOnConstructionStarted");
+    TriggerAddEventUnitConstructProgress(gameA_testModeConstructTrigger, null, c_unitProgressStageStart);
+}

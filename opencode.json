@@ -1,0 +1,56 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "agent": {
+    "coop-planner": {
+      "description": "CoopAgent: reliable commander numeric changes, from query to applied result.",
+      "mode": "primary",
+      "prompt": "{file:./runtime/coop-mcp/prompts/planner.md}",
+      "permission": {
+        "*": "deny",
+        "read": {
+          "*": "deny",
+          "docs/scalar-only.md": "allow",
+          "docs/patch-plan.md": "allow",
+          "docs/schemas/*": "allow",
+          ".opencode/skills/coop-scalar-change/*": "allow",
+          ".opencode/skills/coop-query/*": "allow",
+          ".git/*": "deny",
+          "*/.git/*": "deny",
+          ".tools/*": "deny",
+          "*/.tools/*": "deny",
+          "docs/test-assets/*": "deny",
+          "*/docs/test-assets/*": "deny",
+          "game-a/runtime/*": "deny",
+          "*/game-a/runtime/*": "deny",
+          "game-a/build/*": "deny",
+          "*/game-a/build/*": "deny"
+        },
+        "external_directory": "deny",
+        "skill": {
+          "*": "deny",
+          "coop-scalar-change": "allow",
+          "coop-query": "allow"
+        },
+        "coop_project_status": "allow",
+        "coop_search": "allow",
+        "coop_search_batch": "allow",
+        "coop_scalar_solve": "allow",
+        "coop_target_confirm": "allow",
+        "coop_task_checkpoint": "allow",
+        "coop_plan_prepare": "allow",
+        "coop_plan_submit": "allow",
+        "coop_runtime_test_start": "deny",
+        "coop_patch_plan_apply": "deny",
+        "coop_game_a_build": "deny"
+      }
+    }
+  },
+  "mcp": {
+    "coop": {
+      "type": "local",
+      "command": ["node", "./runtime/coop-mcp/server.mjs"],
+      "enabled": true,
+      "timeout": 240000
+    }
+  }
+}

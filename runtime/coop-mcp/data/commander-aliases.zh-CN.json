@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "commanders": {
+    "ZergAbathur": { "aliases": ["284"] },
+    "ProtossAlarak": { "aliases": ["高坚果","坚果","高建国"] },
+    "ProtossArtanis": { "aliases": ["大主教"] },
+    "ZergDehaka": { "aliases": ["二哈"] },
+    "ProtossFenix": { "aliases": ["菲机","飞机"] },
+    "TerranHorner": { "aliases": ["霍纳","米拉","狗男女"] },
+    "ProtossKarax": { "aliases": ["技师"] },
+    "ZergKerrigan": { "aliases": ["烤","女王"] },
+    "TerranMengsk": { "aliases": ["大帝", "炮王"] },
+    "TerranNova": { "aliases": [] },
+    "TerranRaynor": { "aliases": ["雷先生"] },
+    "ZergStetmann": { "aliases": ["疯子","sttm"] },
+    "ZergStukov": { "aliases": ["毛子"] },
+    "TerranSwann": { "aliases": [] },
+    "TerranTychus": { "aliases": [] },
+    "ProtossVorazun": { "aliases": ["沃天尊"] },
+    "ZergZagara": { "aliases": ["炸鸡"] },
+    "ProtossZeratul": { "aliases": ["泽叔","挂壁","10x"] }
+  }
+}

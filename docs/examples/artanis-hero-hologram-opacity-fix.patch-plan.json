@@ -1,0 +1,32 @@
+{
+  "$schema": "../schemas/patch-plan-v2.schema.json",
+  "formatVersion": 2,
+  "id": "artanis-hero-hologram-opacity-fix",
+  "title": "阿塔尼斯英雄：修正信标全息透明度消息",
+  "target": "game-a.core",
+  "compatibility": {
+    "sc2DataBuild": "B97579",
+    "runtimeContract": 2
+  },
+  "dependsOn": [
+    "artanis-hero-unit",
+    "artanis-hero-galaxy-array-fix",
+    "artanis-hero-revival-beacon",
+    "artanis-hero-runtime-spawn-fix",
+    "artanis-hero-visual-fix",
+    "artanis-hero-beacon-identity-fix",
+    "artanis-hero-summon-progress"
+  ],
+  "conflictsWith": [],
+  "operations": [
+    {
+      "opId": "fix-artanis-hologram-opacity-message",
+      "kind": "catalog.set",
+      "catalog": "Actor",
+      "object": "GameAArtanisBeaconHologram",
+      "path": "On[1].@Send",
+      "expect": "SetOpacity 55",
+      "value": "SetOpacity 0.550000"
+    }
+  ]
+}

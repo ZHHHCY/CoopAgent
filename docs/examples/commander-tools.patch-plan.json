@@ -1,0 +1,68 @@
+{
+  "$schema": "../schemas/patch-plan-v2.schema.json",
+  "formatVersion": 2,
+  "id": "example-artanis-tempest-tools",
+  "title": "示例：阿塔尼斯专属风暴战舰",
+  "userSummary": {
+    "text": "为阿塔尼斯创建一艘专属的示例风暴战舰。"
+  },
+  "target": "game-a.core",
+  "compatibility": {
+    "sc2DataBuild": "B97579",
+    "runtimeContract": 2
+  },
+  "scope": {
+    "kind": "commander",
+    "commanderId": "ProtossArtanis"
+  },
+  "isolation": {
+    "strategy": "private-clone",
+    "owner": {
+      "catalog": "Unit",
+      "object": "Tempest"
+    }
+  },
+  "operations": [
+    {
+      "opId": "clone-artanis-tempest",
+      "kind": "commander.unit.clone",
+      "commanderId": "ProtossArtanis",
+      "sourceUnit": "Tempest",
+      "unitId": "GameAExampleArtanisTempest",
+      "redirects": [
+        {
+          "catalog": "Abil",
+          "object": "StargateTrain",
+          "path": "InfoArray[Train10].Unit",
+          "expect": "Tempest"
+        },
+        {
+          "catalog": "Abil",
+          "object": "StargateWarpTrain",
+          "path": "InfoArray[Train10].Unit",
+          "expectAbsent": true
+        }
+      ]
+    },
+    {
+      "opId": "set-artanis-tempest-life",
+      "kind": "commander.stat.set",
+      "commanderId": "ProtossArtanis",
+      "catalog": "Unit",
+      "object": "GameAExampleArtanisTempest",
+      "path": "LifeMax",
+      "expect": 200,
+      "value": 450
+    },
+    {
+      "opId": "set-artanis-tempest-starting-life",
+      "kind": "commander.stat.set",
+      "commanderId": "ProtossArtanis",
+      "catalog": "Unit",
+      "object": "GameAExampleArtanisTempest",
+      "path": "LifeStart",
+      "expect": 200,
+      "value": 450
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "$schema": "../schemas/patch-plan.schema.json",
+  "formatVersion": 1,
+  "id": "raynor-hyperion-catalog",
+  "title": "雷诺休伯利安：费用与限时生命覆盖",
+  "target": "game-a.core",
+  "compatibility": {
+    "sc2DataBuild": "B97579",
+    "runtimeContract": 2
+  },
+  "operations": [
+    {
+      "opId": "set-hyperion-minerals",
+      "kind": "catalog.set",
+      "catalog": "Abil",
+      "object": "VoidCoopSummonHyperion",
+      "path": "Cost[0].Resource[Minerals]",
+      "expect": 0,
+      "value": 400
+    },
+    {
+      "opId": "set-hyperion-vespene",
+      "kind": "catalog.set",
+      "catalog": "Abil",
+      "object": "VoidCoopSummonHyperion",
+      "path": "Cost[0].Resource[Vespene]",
+      "expect": 0,
+      "value": 400
+    },
+    {
+      "opId": "remove-hyperion-timed-life",
+      "kind": "catalog.remove",
+      "catalog": "Effect",
+      "object": "HyperionVoidCoopSpawnSet",
+      "path": "EffectArray[1]"
+    },
+    {
+      "opId": "set-hyperion-tooltip-zh-cn",
+      "kind": "locale.set",
+      "locale": "zhCN",
+      "key": "Button/Tooltip/SummonHyperionVoid",
+      "expect": null,
+      "value": "花费400晶体矿和400高能瓦斯部署可永久控制的休伯利安号。同一时间只能拥有一艘；被摧毁后需要60秒才能再次部署。"
+    },
+    {
+      "opId": "set-hyperion-tooltip-en-us",
+      "kind": "locale.set",
+      "locale": "enUS",
+      "key": "Button/Tooltip/SummonHyperionVoid",
+      "expect": null,
+      "value": "Deploys a permanently controllable Hyperion for 400 minerals and 400 vespene. Only one may be active; after it is destroyed, deployment has a 60-second cooldown."
+    }
+  ]
+}

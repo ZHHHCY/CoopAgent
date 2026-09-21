@@ -1,0 +1,929 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/ZHHHCY/CoopAgent/main/docs/schemas/patch-plan-v2.schema.json",
+  "title": "CoopAgent PatchPlan v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "formatVersion",
+    "id",
+    "title",
+    "target",
+    "compatibility",
+    "operations"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "formatVersion": {
+      "const": 2
+    },
+    "id": {
+      "$ref": "patch-plan.schema.json#/$defs/id"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "userSummary": {
+      "$ref": "#/$defs/userSummary"
+    },
+    "target": {
+      "const": "game-a.core"
+    },
+    "compatibility": {
+      "$ref": "patch-plan.schema.json#/$defs/compatibility"
+    },
+    "dependsOn": {
+      "$ref": "#/$defs/planIds"
+    },
+    "conflictsWith": {
+      "$ref": "#/$defs/planIds"
+    },
+    "scope": {
+      "$ref": "#/$defs/changeScope"
+    },
+    "isolation": {
+      "$ref": "#/$defs/isolationContract"
+    },
+    "postconditions": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 200,
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/$defs/unitAbilityPostcondition"
+          },
+          {
+            "$ref": "#/$defs/unitCommandPostcondition"
+          },
+          {
+            "$ref": "#/$defs/unitAutocastPostcondition"
+          },
+          {
+            "$ref": "#/$defs/unitPassivePostcondition"
+          },
+          {
+            "$ref": "#/$defs/abilityEffectChainPostcondition"
+          },
+          {
+            "$ref": "#/$defs/localizationPresentPostcondition"
+          },
+          {
+            "$ref": "#/$defs/unitClonePostcondition"
+          }
+        ]
+      }
+    },
+    "operations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "patch-plan.schema.json#/$defs/catalogSet"
+          },
+          {
+            "$ref": "patch-plan.schema.json#/$defs/catalogRemove"
+          },
+          {
+            "$ref": "patch-plan.schema.json#/$defs/galaxySource"
+          },
+          {
+            "$ref": "patch-plan.schema.json#/$defs/localeSet"
+          },
+          {
+            "$ref": "patch-plan.schema.json#/$defs/filePatch"
+          },
+          {
+            "$ref": "#/$defs/catalogCreate"
+          },
+          {
+            "$ref": "#/$defs/catalogClone"
+          },
+          {
+            "$ref": "#/$defs/catalogInsert"
+          },
+          {
+            "$ref": "#/$defs/catalogClear"
+          },
+          {
+            "$ref": "#/$defs/commanderStatSet"
+          },
+          {
+            "$ref": "#/$defs/commanderUnitClone"
+          }
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "userSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "text"
+      ],
+      "properties": {
+        "text": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 160,
+          "pattern": "^[^\\r\\n]+$"
+        }
+      }
+    },
+    "planIds": {
+      "type": "array",
+      "items": {
+        "$ref": "patch-plan.schema.json#/$defs/id"
+      },
+      "uniqueItems": true
+    },
+    "catalogClass": {
+      "type": "string",
+      "pattern": "^C[A-Za-z_][A-Za-z0-9_]*$",
+      "minLength": 2,
+      "maxLength": 120
+    },
+    "catalogIndex": {
+      "oneOf": [
+        {
+          "type": "integer",
+          "minimum": 0
+        },
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[^\\r\\n\\[\\]]+$"
+        }
+      ]
+    },
+    "commanderId": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_]*$",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "postconditionId": {
+      "$ref": "patch-plan.schema.json#/$defs/opId"
+    },
+    "optionalRequirementId": {
+      "oneOf": [
+        {
+          "$ref": "patch-plan.schema.json#/$defs/catalogObject"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "unitAbilityPostcondition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "postId",
+        "kind",
+        "unitId",
+        "abilityId"
+      ],
+      "properties": {
+        "postId": {
+          "$ref": "#/$defs/postconditionId"
+        },
+        "kind": {
+          "const": "unit.ability"
+        },
+        "unitId": {
+          "$ref": "patch-plan.schema.json#/$defs/catalogObject"
+        },
+        "abilityId": {
+          "$ref": "patch-plan.schema.json#/$defs/catalogObject"
+        }
+      }
+    },
+    "unitCommandPostcondition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "postId",
+        "kind",
+        "unitId",
+        "abilityId",
+        "command",
+        "buttonId"
+      ],
+      "properties": {
+        "postId": {
+          "$ref": "#/$defs/postconditionId"
+        },
+        "kind": {
+          "const": "unit.command"
+        },
+        "unitId": {
+          "$ref": "patch-plan.schema.json#/$defs/catalogObject"
+        },
+        "abilityId": {
+          "$ref": "patch-plan.schema.json#/$defs/catalogObject"
+        },
+        "command": {
+          "$ref": "patch-plan.schema.json#/$defs/catalogObject"
+        },
+        "buttonId": {
+          "$ref": "patch-plan.schema.json#/$defs/catalogObject"
+        },
+        "cardIndex": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "row": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "column": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "requirementId": {
+          "$ref": "#/$defs/optionalRequirementId"
+        }
+      }
+    },
+    "unitAutocastPostcondition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "postId",
+        "kind",
+        "unitId",
+        "abilityId",
+        "command",
+        "buttonId"
+      ],
+      "properties": {
+        "postId": {
+          "$ref": "#/$defs/postconditionId"
+        },
+        "kind": {
+          "const": "unit.autocast"
+        },
+        "unitId": {
+          "$ref": "patch-plan.schema.json#/$defs/catalogObject"
+        },
+        "abilityId": {
+          "$ref": "patch-plan.schema.json#/$defs/catalogObject"
+        },
+        "command": {
+          "$ref": "patch-plan.schema.json#/$defs/catalogObject"
+        },
+        "buttonId": {
+          "$ref": "patch-plan.schema.json#/$defs/catalogObject"
+        },
+        "cardIndex": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "row": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "column": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "requirementId": {
+          "$ref": "#/$defs/optionalRequirementId"
+        },
+        "defaultOn": {
+          "type": "boolean"
+        }
+      }
+    },
+    "unitPassivePostcondition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "postId",
+        "kind",
+        "unitId",
+        "buttonId"
+      ],
+      "properties": {
+        "postId": {
+          "$ref": "#/$defs/postconditionId"
+        },
+        "kind": {
+          "const": "unit.passive"
+        },
+        "unitId": {
+          "$ref": "patch-plan.schema.json#/$defs/catalogObject"
+        },
+        "buttonId": {
+          "$ref": "patch-plan.schema.json#/$defs/catalogObject"
+        },
+        "cardIndex": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "row": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "column": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "requirementId": {
+          "$ref": "#/$defs/optionalRequirementId"
+        }
+      }
+    },
+    "abilityEffectChainPostcondition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "postId",
+        "kind",
+        "abilityId",
+        "effectPath",
+        "rootEffectId"
+      ],
+      "properties": {
+        "postId": {
+          "$ref": "#/$defs/postconditionId"
+        },
+        "kind": {
+          "const": "ability.effect-chain"
+        },
+        "abilityId": {
+          "$ref": "patch-plan.schema.json#/$defs/catalogObject"
+        },
+        "effectPath": {
+          "$ref": "patch-plan.schema.json#/$defs/catalogPath"
+        },
+        "rootEffectId": {
+          "$ref": "patch-plan.schema.json#/$defs/catalogObject"
+        },
+        "requiredEffectIds": {
+          "type": "array",
+          "maxItems": 100,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "patch-plan.schema.json#/$defs/catalogObject"
+          }
+        }
+      }
+    },
+    "localizationPresentPostcondition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "postId",
+        "kind",
+        "entries"
+      ],
+      "properties": {
+        "postId": {
+          "$ref": "#/$defs/postconditionId"
+        },
+        "kind": {
+          "const": "localization.present"
+        },
+        "entries": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "locale",
+              "key"
+            ],
+            "properties": {
+              "locale": {
+                "type": "string",
+                "pattern": "^[a-z]{2}[A-Z]{2}$"
+              },
+              "key": {
+                "type": "string",
+                "pattern": "^[^=\\r\\n]+$",
+                "minLength": 1,
+                "maxLength": 320
+              },
+              "expected": {
+                "type": "string",
+                "pattern": "^[^\\r\\n]*$",
+                "maxLength": 4000
+              }
+            }
+          }
+        }
+      }
+    },
+    "unitCloneCatalogEntrypoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "catalog",
+        "object",
+        "path"
+      ],
+      "properties": {
+        "kind": {
+          "const": "catalog"
+        },
+        "catalog": {
+          "$ref": "patch-plan.schema.json#/$defs/catalog"
+        },
+        "object": {
+          "$ref": "patch-plan.schema.json#/$defs/catalogObject"
+        },
+        "path": {
+          "$ref": "patch-plan.schema.json#/$defs/catalogPath"
+        }
+      }
+    },
+    "unitCloneGalaxyEntrypoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "path"
+      ],
+      "properties": {
+        "kind": {
+          "const": "galaxy"
+        },
+        "path": {
+          "$ref": "patch-plan.schema.json#/$defs/relativePath"
+        }
+      }
+    },
+    "unitClonePostcondition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "postId",
+        "kind",
+        "commanderId",
+        "sourceUnitId",
+        "unitId",
+        "sourceActorId",
+        "actorId",
+        "entrypoints"
+      ],
+      "properties": {
+        "postId": {
+          "$ref": "#/$defs/postconditionId"
+        },
+        "kind": {
+          "const": "unit.clone"
+        },
+        "commanderId": {
+          "$ref": "#/$defs/commanderId"
+        },
+        "sourceUnitId": {
+          "$ref": "patch-plan.schema.json#/$defs/catalogObject"
+        },
+        "unitId": {
+          "$ref": "patch-plan.schema.json#/$defs/catalogObject"
+        },
+        "sourceActorId": {
+          "$ref": "patch-plan.schema.json#/$defs/catalogObject"
+        },
+        "actorId": {
+          "$ref": "patch-plan.schema.json#/$defs/catalogObject"
+        },
+        "entrypoints": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/unitCloneCatalogEntrypoint"
+              },
+              {
+                "$ref": "#/$defs/unitCloneGalaxyEntrypoint"
+              }
+            ]
+          }
+        },
+        "requiredActorFields": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "patch-plan.schema.json#/$defs/catalogPath"
+          }
+        },
+        "vitalPolicy": {
+          "enum": [
+            "preserve-source",
+            "full-start"
+          ]
+        },
+        "nameKey": {
+          "type": "string",
+          "pattern": "^[^=\\r\\n]+$",
+          "minLength": 1,
+          "maxLength": 320
+        }
+      }
+    },
+    "changeScope": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "commanderId"
+          ],
+          "properties": {
+            "kind": {
+              "const": "commander"
+            },
+            "commanderId": {
+              "$ref": "#/$defs/commanderId"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "const": "global"
+            }
+          }
+        }
+      ]
+    },
+    "isolationOwner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "catalog",
+        "object"
+      ],
+      "properties": {
+        "catalog": {
+          "$ref": "patch-plan.schema.json#/$defs/catalog"
+        },
+        "object": {
+          "$ref": "patch-plan.schema.json#/$defs/catalogObject"
+        }
+      }
+    },
+    "isolationContract": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "strategy"
+          ],
+          "properties": {
+            "strategy": {
+              "const": "player-upgrade"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "strategy"
+          ],
+          "properties": {
+            "strategy": {
+              "const": "player-runtime"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "strategy",
+            "owner"
+          ],
+          "properties": {
+            "strategy": {
+              "enum": [
+                "private-clone",
+                "direct-private"
+              ]
+            },
+            "owner": {
+              "$ref": "#/$defs/isolationOwner"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "strategy"
+          ],
+          "properties": {
+            "strategy": {
+              "const": "global"
+            }
+          }
+        }
+      ]
+    },
+    "catalogCreate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "opId",
+        "kind",
+        "catalog",
+        "object",
+        "class"
+      ],
+      "properties": {
+        "opId": {
+          "$ref": "patch-plan.schema.json#/$defs/opId"
+        },
+        "kind": {
+          "const": "catalog.create"
+        },
+        "catalog": {
+          "$ref": "patch-plan.schema.json#/$defs/catalog"
+        },
+        "object": {
+          "$ref": "patch-plan.schema.json#/$defs/catalogObject"
+        },
+        "class": {
+          "$ref": "#/$defs/catalogClass"
+        },
+        "parent": {
+          "$ref": "patch-plan.schema.json#/$defs/catalogObject"
+        }
+      }
+    },
+    "catalogClone": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "opId",
+        "kind",
+        "catalog",
+        "source",
+        "object"
+      ],
+      "properties": {
+        "opId": {
+          "$ref": "patch-plan.schema.json#/$defs/opId"
+        },
+        "kind": {
+          "const": "catalog.clone"
+        },
+        "catalog": {
+          "$ref": "patch-plan.schema.json#/$defs/catalog"
+        },
+        "source": {
+          "$ref": "patch-plan.schema.json#/$defs/catalogObject"
+        },
+        "object": {
+          "$ref": "patch-plan.schema.json#/$defs/catalogObject"
+        }
+      }
+    },
+    "catalogInsert": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "opId",
+        "kind",
+        "catalog",
+        "object",
+        "path",
+        "index"
+      ],
+      "anyOf": [
+        {
+          "properties": {
+            "value": true
+          },
+          "required": [
+            "value"
+          ]
+        },
+        {
+          "properties": {
+            "attributes": true
+          },
+          "required": [
+            "attributes"
+          ]
+        }
+      ],
+      "properties": {
+        "opId": {
+          "$ref": "patch-plan.schema.json#/$defs/opId"
+        },
+        "kind": {
+          "const": "catalog.insert"
+        },
+        "catalog": {
+          "$ref": "patch-plan.schema.json#/$defs/catalog"
+        },
+        "object": {
+          "$ref": "patch-plan.schema.json#/$defs/catalogObject"
+        },
+        "path": {
+          "$ref": "patch-plan.schema.json#/$defs/catalogPath"
+        },
+        "index": {
+          "$ref": "#/$defs/catalogIndex"
+        },
+        "value": {
+          "$ref": "patch-plan.schema.json#/$defs/scalar"
+        },
+        "attributes": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": {
+            "pattern": "^(?!index$|value$|removed$)[A-Za-z_][A-Za-z0-9_]*$"
+          },
+          "additionalProperties": {
+            "$ref": "patch-plan.schema.json#/$defs/scalar"
+          }
+        }
+      }
+    },
+    "catalogClear": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "opId",
+        "kind",
+        "catalog",
+        "object",
+        "path"
+      ],
+      "properties": {
+        "opId": {
+          "$ref": "patch-plan.schema.json#/$defs/opId"
+        },
+        "kind": {
+          "const": "catalog.clear"
+        },
+        "catalog": {
+          "$ref": "patch-plan.schema.json#/$defs/catalog"
+        },
+        "object": {
+          "$ref": "patch-plan.schema.json#/$defs/catalogObject"
+        },
+        "path": {
+          "$ref": "patch-plan.schema.json#/$defs/catalogPath"
+        }
+      }
+    },
+    "commanderStatSet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "opId",
+        "kind",
+        "commanderId",
+        "catalog",
+        "object",
+        "path",
+        "expect",
+        "value"
+      ],
+      "properties": {
+        "opId": {
+          "$ref": "patch-plan.schema.json#/$defs/opId"
+        },
+        "kind": {
+          "const": "commander.stat.set"
+        },
+        "prestigeUpgrade": {
+          "$ref": "patch-plan.schema.json#/$defs/catalogObject",
+          "description": "Optional existing commander prestige Upgrade ID. Apply only when that prestige is active; not a research/dynamic condition."
+        },
+        "commanderId": {
+          "$ref": "#/$defs/commanderId"
+        },
+        "catalog": {
+          "$ref": "patch-plan.schema.json#/$defs/catalog"
+        },
+        "object": {
+          "$ref": "patch-plan.schema.json#/$defs/catalogObject"
+        },
+        "path": {
+          "$ref": "patch-plan.schema.json#/$defs/catalogPath"
+        },
+        "expect": {
+          "type": "number"
+        },
+        "value": {
+          "type": "number"
+        }
+      }
+    },
+    "commanderUnitRedirect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "catalog",
+        "object",
+        "path"
+      ],
+      "oneOf": [
+        {
+          "properties": {
+            "expect": {}
+          },
+          "required": [
+            "expect"
+          ]
+        },
+        {
+          "properties": {
+            "expectAbsent": {}
+          },
+          "required": [
+            "expectAbsent"
+          ]
+        }
+      ],
+      "properties": {
+        "catalog": {
+          "$ref": "patch-plan.schema.json#/$defs/catalog"
+        },
+        "object": {
+          "$ref": "patch-plan.schema.json#/$defs/catalogObject"
+        },
+        "path": {
+          "$ref": "patch-plan.schema.json#/$defs/catalogPath"
+        },
+        "expect": {
+          "$ref": "patch-plan.schema.json#/$defs/catalogObject"
+        },
+        "expectAbsent": {
+          "const": true
+        }
+      }
+    },
+    "commanderUnitClone": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "opId",
+        "kind",
+        "commanderId",
+        "sourceUnit",
+        "unitId",
+        "redirects"
+      ],
+      "properties": {
+        "opId": {
+          "$ref": "patch-plan.schema.json#/$defs/opId"
+        },
+        "kind": {
+          "const": "commander.unit.clone"
+        },
+        "commanderId": {
+          "$ref": "#/$defs/commanderId"
+        },
+        "sourceUnit": {
+          "$ref": "patch-plan.schema.json#/$defs/catalogObject"
+        },
+        "unitId": {
+          "$ref": "patch-plan.schema.json#/$defs/catalogObject"
+        },
+        "sourceActor": {
+          "$ref": "patch-plan.schema.json#/$defs/catalogObject"
+        },
+        "actorId": {
+          "$ref": "patch-plan.schema.json#/$defs/catalogObject"
+        },
+        "redirects": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/commanderUnitRedirect"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,187 @@
+// Game A bridge for Blizzard's official custom-mutator selector.
+
+bool gameA_mutatorDialogInitialized = false;
+int gameA_mutatorParentDialog = c_invalidDialogId;
+int gameA_mutatorButton = c_invalidDialogControlId;
+int gameA_mutatorCountLabel = c_invalidDialogControlId;
+trigger gameA_mutatorButtonTrigger;
+trigger gameA_mutatorAcceptTrigger;
+
+void GameA_MutatorSelectionUpdateCount () {
+    DialogControlSetPropertyAsText(gameA_mutatorCountLabel, c_triggerControlPropertyText, PlayerGroupAll(), StringToText(IntToString(libCOUI_gv_cU_CustomMutatorActiveItemCount) + " / 10"));
+}
+
+void GameA_MutatorSelectionSetOfficialTriggers (bool enabled) {
+    TriggerEnable(libCOUI_gt_CU_CustomMutatorChangePage, enabled);
+    TriggerEnable(libCOUI_gt_CU_CustomMutatorToggleItem, enabled);
+    TriggerEnable(libCOUI_gt_CU_CustomMutatorSuggestItem, enabled);
+    TriggerEnable(libCOUI_gt_CU_CustomMutatorRemoveActiveItem, enabled);
+    TriggerEnable(libCOUI_gt_CU_CustomMutatorOpenMenu, false);
+    TriggerEnable(libCOUI_gt_CU_CustomMutatorLeaderLeaves, false);
+    TriggerEnable(libCOUI_gt_CU_CustomMutatorSpeedChange, false);
+    TriggerEnable(libCOUI_gt_CU_CustomMutatorStartGame, false);
+}
+
+void GameA_MutatorSelectionShowExistingDialog () {
+    int player;
+    playergroup humans;
+
+    UISetFrameVisible(PlayerGroupAll(), c_syncFrameTypeMenuBar, true);
+    UISetHotkeyAllowed(PlayerGroupAll(), c_hotkeyMenuAchievements, false);
+    DialogControlSetVisible(libCOUI_gv_cU_CustomMutatorChatDisplayStandard, PlayerGroupAll(), false);
+    DialogSetVisible(libCOUI_gv_cU_CustomMutatorDialog, PlayerGroupAll(), true);
+    libCOMI_gf_CM_ChatBarSetMode(libCOMI_ge_CM_ChatBarMode_CM_ChatBarMutator, PlayerGroupAll());
+    SoundChannelMute(PlayerGroupAll(), c_soundCategoryAmbient, true);
+    SoundChannelMute(PlayerGroupAll(), c_soundCategoryDoodad, true);
+
+    humans = libCOOC_gf_HumanPlayers();
+    player = -1;
+    while (true) {
+        player = PlayerGroupNextPlayer(humans, player);
+        if (player < 0) {
+            break;
+        }
+        libCOUI_gf_CU_GPVisibilityAutoUpdate(false, player, c_transitionDurationImmediate);
+        libCOUI_gf_CU_CustomMutatorUpdate(player);
+    }
+    GameA_MutatorSelectionSetOfficialTriggers(true);
+}
+
+void GameA_MutatorSelectionHideDialog () {
+    UISetHotkeyAllowed(PlayerGroupAll(), c_hotkeyMenuAchievements, true);
+    SoundChannelMute(PlayerGroupAll(), c_soundCategoryAmbient, false);
+    SoundChannelMute(PlayerGroupAll(), c_soundCategoryDoodad, false);
+    DialogControlSetVisible(libCOUI_gv_cU_CustomMutatorChatDisplayStandard, PlayerGroupAll(), true);
+    DialogSetVisible(libCOUI_gv_cU_CustomMutatorDialog, PlayerGroupAll(), false);
+    GameA_MutatorSelectionSetOfficialTriggers(false);
+    libCOUI_gv_cU_CustomMutatorStartingUp = false;
+    libCOMI_gf_CM_ChatBarSetMode(libCOMI_ge_CM_ChatBarMode_CM_ChatBarNormal, PlayerGroupAll());
+    UISetFrameVisible(PlayerGroupAll(), c_syncFrameTypeMenuBar, false);
+    DialogSetVisible(gameA_mutatorParentDialog, PlayerGroupSingle(1), true);
+}
+
+bool GameA_MutatorSelectionOnAccept (bool testConds, bool runActions) {
+    if (testConds && EventDialogControl() != libCOUI_gv_cU_CustomMutatorStartButton) {
+        return false;
+    }
+    if (!runActions) {
+        return true;
+    }
+    GameA_MutatorSelectionHideDialog();
+    GameA_MutatorSelectionUpdateCount();
+    return true;
+}
+
+bool GameA_MutatorSelectionOnOpen (bool testConds, bool runActions) {
+    if (testConds && EventDialogControl() != gameA_mutatorButton) {
+        return false;
+    }
+    if (!runActions) {
+        return true;
+    }
+
+    DialogSetVisible(gameA_mutatorParentDialog, PlayerGroupSingle(1), false);
+    PlayerSetDifficulty(1, gameA_selectedDifficulty);
+    PlayerSetDifficulty(2, gameA_selectedDifficulty);
+    libCOMU_gf_EnableMutatorCustomMode();
+
+    if (!gameA_mutatorDialogInitialized) {
+        libCOUI_gf_CU_CustomMutatorDisplay();
+        gameA_mutatorAcceptTrigger = TriggerCreate("GameA_MutatorSelectionOnAccept");
+        TriggerAddEventDialogControl(gameA_mutatorAcceptTrigger, 1, libCOUI_gv_cU_CustomMutatorStartButton, c_triggerControlEventTypeClick);
+        gameA_mutatorDialogInitialized = true;
+    }
+    else {
+        GameA_MutatorSelectionShowExistingDialog();
+    }
+
+    DialogControlSetPropertyAsText(libCOUI_gv_cU_CustomMutatorStartButton, c_triggerControlPropertyText, PlayerGroupAll(), StringExternal("GameA/Preparation/MutatorAccept"));
+    DialogControlSetVisible(libCOUI_gv_cU_CustomMutatorMenuButton, PlayerGroupAll(), false);
+    DialogControlSetVisible(libCOUI_gv_cU_CustomMutatorSpeedDropDown, PlayerGroupAll(), false);
+    libCOUI_gv_cU_CustomMutatorStartingUp = false;
+    GameA_MutatorSelectionSetOfficialTriggers(true);
+    return true;
+}
+
+void GameA_MutatorSelectionCommanderChanged () {
+    DialogControlSetEnabled(gameA_mutatorButton, PlayerGroupAll(), true);
+}
+
+void GameA_MutatorSelectionCreateControls (int dialog) {
+    int label;
+
+    gameA_mutatorParentDialog = dialog;
+
+    label = DialogControlCreate(dialog, c_triggerControlTypeLabel);
+    DialogControlSetSize(label, PlayerGroupAll(), 270, 30);
+    DialogControlSetPosition(label, PlayerGroupAll(), c_anchorTopLeft, 1070, 600);
+    DialogControlSetPropertyAsText(label, c_triggerControlPropertyText, PlayerGroupAll(), StringExternal("GameA/Preparation/MutatorTitle"));
+
+    gameA_mutatorButton = DialogControlCreate(dialog, c_triggerControlTypeButton);
+    DialogControlSetSize(gameA_mutatorButton, PlayerGroupAll(), 260, 48);
+    DialogControlSetPosition(gameA_mutatorButton, PlayerGroupAll(), c_anchorTopLeft, 1070, 635);
+    DialogControlSetPropertyAsText(gameA_mutatorButton, c_triggerControlPropertyText, PlayerGroupAll(), StringExternal("GameA/Preparation/MutatorButton"));
+    libNtve_gf_SetDialogItemStyle(gameA_mutatorButton, "ModCenterSize16", PlayerGroupAll());
+    libNtve_gf_SetDialogItemTooltip(gameA_mutatorButton, StringExternal("GameA/Preparation/MutatorTooltip"), PlayerGroupAll());
+    DialogControlSetEnabled(gameA_mutatorButton, PlayerGroupAll(), false);
+
+    gameA_mutatorCountLabel = DialogControlCreate(dialog, c_triggerControlTypeLabel);
+    DialogControlSetSize(gameA_mutatorCountLabel, PlayerGroupAll(), 100, 32);
+    DialogControlSetPosition(gameA_mutatorCountLabel, PlayerGroupAll(), c_anchorTopLeft, 1340, 643);
+
+    gameA_mutatorButtonTrigger = TriggerCreate("GameA_MutatorSelectionOnOpen");
+    TriggerAddEventDialogControl(gameA_mutatorButtonTrigger, 1, gameA_mutatorButton, c_triggerControlEventTypeClick);
+    GameA_MutatorSelectionUpdateCount();
+}
+
+void GameA_MutatorSelectionClearEnabled () {
+    int index = 1;
+    string mutator;
+
+    while (index <= UserDataInstanceCount("Mutators")) {
+        mutator = UserDataInstance("Mutators", index);
+        libCOMU_gf_EnableDisableMutator(false, mutator);
+        index += 1;
+    }
+}
+
+void GameA_MutatorSelectionApply () {
+    int activeIndex = 1;
+    int itemIndex;
+    int randomCount = 0;
+    int randomIndex = 0;
+    string mutator;
+
+    GameA_MutatorSelectionClearEnabled();
+    if (libCOUI_gv_cU_CustomMutatorActiveItemCount <= 0) {
+        libCOMU_gv_cT_MutatorCustomMode = false;
+        return;
+    }
+
+    libCOMU_gf_EnableMutatorCustomMode();
+    while (activeIndex <= libCOUI_gv_cU_CustomMutatorActiveItemCount) {
+        itemIndex = libCOUI_gv_cU_CustomMutatorActiveItems[activeIndex];
+        if (itemIndex > 0) {
+            mutator = libCOUI_gv_cU_CustomMutatorItems[itemIndex];
+            if (mutator == "Random") {
+                randomCount += 1;
+            }
+            else {
+                libCOMU_gf_EnableDisableMutator(true, mutator);
+            }
+        }
+        activeIndex += 1;
+    }
+
+    while (randomIndex < randomCount) {
+        libCOMU_gf_EnableDisableMutator(true, libCOMU_gf_CT_RandomUnusedCustomMutator());
+        randomIndex += 1;
+    }
+}
+
+void GameA_MutatorSelectionInit () {
+    gameA_mutatorDialogInitialized = false;
+    gameA_mutatorParentDialog = c_invalidDialogId;
+    gameA_mutatorButton = c_invalidDialogControlId;
+    gameA_mutatorCountLabel = c_invalidDialogControlId;
+}

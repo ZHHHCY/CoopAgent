@@ -1,0 +1,13 @@
+{
+  "version": "1.18.8",
+  "artifacts": {
+    "darwin-arm64": {
+      "url": "https://github.com/anomalyco/opencode/releases/download/v1.18.8/opencode-darwin-arm64.zip",
+      "sha256": "0fb2e11a819dd97949f0f7e0348e0e0c4fd8c42b3a5ed7aee1f0d437c94b9f0c"
+    },
+    "windows-x64": {
+      "url": "https://github.com/anomalyco/opencode/releases/download/v1.18.8/opencode-windows-x64.zip",
+      "sha256": "85baa5de531db8d611fb5d9a62ffee00f6de69ae26e4845ec091dd2da4eb5fd1"
+    }
+  }
+}

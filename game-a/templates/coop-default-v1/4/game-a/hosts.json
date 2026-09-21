@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "defaultHost": "oblivion-express",
+  "hosts": [
+    {
+      "id": "oblivion-express",
+      "displayName": "Oblivion Express / 湮灭快车",
+      "source": "projects/GameA-OblivionExpress.SC2Map",
+      "outputName": "GameA-OblivionExpress-Build.SC2Map",
+      "adapter": "scripts/GameAOblivionExpressAdapter.galaxy",
+      "entry": "GameA_OblivionExpressInit"
+    }
+  ]
+}
