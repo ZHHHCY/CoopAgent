@@ -1,4 +1,6 @@
 import importlib.util
+import json
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -58,6 +60,52 @@ class CascSelectionTests(unittest.TestCase):
                 r"campaigns\void.sc2campaign\base.sc2assets\assets\unit.m3"
             )
         )
+
+
+class CascRecoveryTests(unittest.TestCase):
+    def test_complete_extraction_is_reused_only_with_matching_source_and_files(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            sc2 = root / "StarCraft II"
+            output = root / "B97579"
+            sc2.mkdir()
+            (output / "files").mkdir(parents=True)
+            (output / "known-files.tsv.gz").write_bytes(b"index")
+            (output / "selected-files.tsv").write_text("index", encoding="utf-8")
+            manifest = {
+                "extractorVersion": MODULE.CASC_EXTRACTOR_VERSION,
+                "source": {"starCraftRoot": str(sc2.resolve()), "version": "5.0.15.97579"},
+                "extract": {
+                    "selectedFiles": 12,
+                    "extractedFiles": 12,
+                    "failures": [],
+                },
+            }
+            (output / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+            self.assertTrue(MODULE.extraction_is_complete(output, sc2, "5.0.15.97579"))
+            manifest["extract"]["failures"] = [{"path": "broken"}]
+            (output / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+            self.assertFalse(MODULE.extraction_is_complete(output, sc2, "5.0.15.97579"))
+
+    def test_publish_and_recovery_keep_the_last_complete_extraction(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            output = root / "B97579"
+            staging = root / "B97579.building-1"
+            output.mkdir()
+            staging.mkdir()
+            (output / "marker").write_text("old", encoding="utf-8")
+            (staging / "marker").write_text("new", encoding="utf-8")
+            MODULE.publish_extraction(staging, output)
+            self.assertEqual((output / "marker").read_text(encoding="utf-8"), "new")
+            self.assertFalse((root / "B97579.previous").exists())
+
+            output.rename(root / "B97579.previous")
+            stale = root / "B97579.building-stale"
+            stale.mkdir()
+            MODULE.recover_extraction_output(output)
+            self.assertEqual((output / "marker").read_text(encoding="utf-8"), "new")
+            self.assertFalse(stale.exists())
 
 
 if __name__ == "__main__":

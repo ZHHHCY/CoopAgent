@@ -1,7 +1,8 @@
-﻿Actor/Name/WreckedBunker=Wrecked Bunker
+Actor/Name/WreckedBunker=Wrecked Bunker
 DocInfo/Author=Blizzard Entertainment
-DocInfo/DescLong=Moebius Corps is moving trains of unrevealed cargo across the surface of Tarsonis. Join forces with your ally and intercept the trains before they can escape.
-DocInfo/Name=Oblivion Express
+DocInfo/DescLong=The Oblivion Express mission map used by CoopAgent Map Runtime.
+DocInfo/DescShort=CoopAgent / Oblivion Express
+DocInfo/Name=CoopAgent - Oblivion Express
 LoadingScreen/Tip= 
 LoadingScreen/TipRestart= 
 MapInfo/Player00/Name=Neutral

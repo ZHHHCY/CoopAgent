@@ -862,7 +862,7 @@ function resolveCorePath(coreRoot, relativePath) {
   const root = path.resolve(coreRoot);
   const resolved = path.resolve(root, ...segments);
   if (resolved !== root && !resolved.startsWith(`${root}${path.sep}`)) {
-    throw new PatchPlanError(`Path escapes the Game A core: ${relativePath}`);
+    throw new PatchPlanError(`Path escapes the Map Runtime core: ${relativePath}`);
   }
   return resolved;
 }
@@ -895,7 +895,7 @@ async function applyGalaxySource(context, operation) {
   }
   const normalizedPath = operation.path.replaceAll("\\", "/");
   if (String(manifest.galaxy.core).replaceAll("\\", "/").toLowerCase() === normalizedPath.toLowerCase()) {
-    throw new PatchPlanError(`${operation.opId}: galaxy.source cannot replace the frozen Game A core module`);
+    throw new PatchPlanError(`${operation.opId}: galaxy.source cannot replace the frozen Map Runtime core module`);
   }
   const existing = manifest.galaxy.modules.find(
     (module) => String(module.path).replaceAll("\\", "/").toLowerCase() === normalizedPath.toLowerCase(),
@@ -1505,12 +1505,12 @@ async function assertCompatibility(repoRoot, plan) {
   const baseline = JSON.parse(await readFile(baselinePath, "utf8"));
   if (baseline.sc2?.dataBuild !== plan.compatibility.sc2DataBuild) {
     throw new PatchPlanError(
-      `SC2 data build mismatch: plan=${plan.compatibility.sc2DataBuild}, Game A=${baseline.sc2?.dataBuild ?? "unknown"}`,
+      `SC2 data build mismatch: plan=${plan.compatibility.sc2DataBuild}, Map Runtime=${baseline.sc2?.dataBuild ?? "unknown"}`,
     );
   }
   if (baseline.schemaVersion !== plan.compatibility.runtimeContract) {
     throw new PatchPlanError(
-      `Game A runtime contract mismatch: plan=${plan.compatibility.runtimeContract}, Game A=${baseline.schemaVersion}`,
+      `Map Runtime runtime contract mismatch: plan=${plan.compatibility.runtimeContract}, Map Runtime=${baseline.schemaVersion}`,
     );
   }
 }
@@ -1813,7 +1813,7 @@ function runPowerShell(script, args, cwd) {
   );
   if (result.status !== 0) {
     throw new PatchPlanError(
-      `Game A validation command failed: ${path.basename(script)}`,
+      `Map Runtime validation command failed: ${path.basename(script)}`,
       [result.stdout?.trim(), result.stderr?.trim()].filter(Boolean),
     );
   }

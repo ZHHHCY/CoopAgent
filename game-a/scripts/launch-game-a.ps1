@@ -1,12 +1,13 @@
-param(
+﻿param(
     [Alias('Host')][string]$HostId,
     [string]$StarCraftRoot
 )
 
 $ErrorActionPreference = 'Stop'
+[Console]::OutputEncoding = New-Object Text.UTF8Encoding($false)
 
 if (Get-Process -Name 'SC2_x64', 'SC2' -ErrorAction SilentlyContinue) {
-    throw 'StarCraft II is already running. Close the current playtest before launching another project.'
+    throw '星际争霸 II 正在运行。请先结束当前游戏，再更新并运行地图。'
 }
 
 $applicationGameARoot = Split-Path -Parent $PSScriptRoot
@@ -65,6 +66,9 @@ public static class GameAEditorWindow {
     [DllImport("user32.dll")]
     public static extern bool SetForegroundWindow(IntPtr window);
 
+    [DllImport("user32.dll")]
+    public static extern bool IsWindowEnabled(IntPtr window);
+
     public static string Title(IntPtr window) {
         StringBuilder title = new StringBuilder(1024);
         GetWindowText(window, title, title.Capacity);
@@ -98,7 +102,7 @@ if (-not (Test-Path -LiteralPath $editorPath)) {
 }
 
 if (-not (Test-Path -LiteralPath $mapComponents)) {
-    throw "Game A component map was not found: $mapComponents"
+    throw "Map Runtime component map was not found: $mapComponents"
 }
 
 # SC2 display mode 1 is borderless windowed fullscreen.
@@ -167,7 +171,7 @@ if ($documentWindow -eq [IntPtr]::Zero) {
     if ($previousGeneratedWindow -ne [IntPtr]::Zero) {
         $previousTitle = [GameAEditorWindow]::Title($previousGeneratedWindow)
         if ($previousTitle.Contains('*')) {
-            Write-Warning "The previous generated Game A map has unsaved changes and was left open: $previousTitle"
+            Write-Warning "The previous generated Map Runtime map has unsaved changes and was left open: $previousTitle"
         }
         else {
             if ($shell.AppActivate($editor.Id)) {
@@ -177,7 +181,7 @@ if ($documentWindow -eq [IntPtr]::Zero) {
                 Start-Sleep -Milliseconds 750
                 $editor = Get-ReadyEditor
                 if ($null -eq $editor) {
-                    throw 'The SC2 Editor exited while closing the previous generated Game A document.'
+                    throw 'The SC2 Editor exited while closing the previous generated Map Runtime document.'
                 }
             }
         }
@@ -199,7 +203,7 @@ if ($documentWindow -eq [IntPtr]::Zero) {
     } while ((Get-Date) -lt $deadline)
 
     if ($null -eq $editor -or $documentWindow -eq [IntPtr]::Zero) {
-        throw 'The editor started, but the generated Game A map did not open.'
+        throw 'The editor started, but the generated Map Runtime map did not open.'
     }
 }
 
@@ -219,7 +223,7 @@ Get-ChildItem -LiteralPath $versionsRoot -Directory -Filter ($documentTitlePrefi
             Remove-Item -LiteralPath $candidate -Recurse -Force -ErrorAction Stop
         }
         catch {
-            Write-Warning "Could not remove an older Game A build that is probably still open: $candidate"
+            Write-Warning "Could not remove an older Map Runtime build that is probably still open: $candidate"
         }
     }
 
@@ -241,7 +245,10 @@ if ($editorWasStarted) {
 
 $documentWindow = Get-GameADocumentWindow -ProcessId $editor.Id
 if ($documentWindow -eq [IntPtr]::Zero) {
-    throw 'Could not activate the Game A document window.'
+    throw 'Could not activate the Map Runtime document window.'
+}
+if ([GameAEditorWindow]::Title($documentWindow).Contains('*')) {
+    throw '生成地图在编辑器中存在未保存的改动。请先另存或关闭该文档，再返回 CoopAgent 更新并运行。'
 }
 
 # SetForegroundWindow may report false when Windows' foreground-lock policy has
@@ -250,4 +257,14 @@ if ($documentWindow -eq [IntPtr]::Zero) {
 [GameAEditorWindow]::SetForegroundWindow($documentWindow) | Out-Null
 
 Start-Sleep -Seconds 1
-$shell.SendKeys('^{F9}')
+$manualStartRequired = -not [GameAEditorWindow]::IsWindowEnabled($documentWindow)
+if (-not $manualStartRequired) { $shell.SendKeys('^{F9}') }
+# Opening the exact generated document is confirmed; sending the shortcut does
+# not prove that a game started. The desktop observes the game process separately.
+$result = [ordered]@{
+    status = 'ok'
+    editor = 'opened'
+    documentName = $documentTitleFragment
+    manualStartRequired = $manualStartRequired
+}
+Write-Output ('COOPAGENT_EDITOR_RESULT ' + ($result | ConvertTo-Json -Compress))

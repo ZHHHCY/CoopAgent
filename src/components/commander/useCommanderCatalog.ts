@@ -47,7 +47,7 @@ export function useCommanderCatalog(agentReady: boolean, sc2RootPath?: string, p
     return () => {
       cancelled = true;
     };
-  }, [agentReady, sc2RootPath]);
+  }, [agentReady, sc2RootPath, projectRevision]);
 
   useEffect(() => {
     if (!agentReady || !isTauri() || !selectedCommanderId) {

@@ -7,7 +7,7 @@ import { DatabaseSync } from "node:sqlite";
 import { fileURLToPath } from "node:url";
 
 // These are official B97579 files read from the user's local co-op database.
-// Only this transformer and the hashes ship with Game A; transformed Blizzard
+// Only this transformer and the hashes ship with Map Runtime; transformed Blizzard
 // sources exist exclusively inside ignored, rebuildable map output.
 const REVISION = "game-a-commander-compat-v2";
 const SOURCES = Object.freeze([
@@ -41,7 +41,7 @@ const hash = (value) => createHash("sha256").update(value).digest("hex");
 const count = (value, needle) => value.split(needle).length - 1;
 
 function fail(message) {
-  throw new Error(`Game A commander compatibility: ${message}`);
+  throw new Error(`Map Runtime commander compatibility: ${message}`);
 }
 
 function parseArgs(argv) {
@@ -85,7 +85,7 @@ function loadSources(options) {
       if (!row) fail(`database does not contain ${spec.sourceFile}`);
       const actualHash = hash(row.contents);
       if (row.package_id !== "starcoop.sc2mod" || row.sha256 !== spec.sha256 || actualHash !== spec.sha256) {
-        fail(`source drift for ${spec.sourceFile}; rebuild/review compatibility before launching Game A`);
+        fail(`source drift for ${spec.sourceFile}; rebuild/review compatibility before launching Map Runtime`);
       }
       if (count(row.contents, "PlayerCommander(") !== spec.playerCommanderCalls) {
         fail(`unexpected PlayerCommander call count in ${spec.sourceFile}`);
@@ -105,7 +105,7 @@ function replaceExactly(source, needle, replacement, expected, label) {
 
 const wrapperDeclaration = "string libCOOC_gf_GameACommanderData (int lp_player);";
 const wrapperFunction = `
-// Game A local editor runs cannot assign paid commanders to the engine's
+// Map Runtime local editor runs cannot assign paid commanders to the engine's
 // PlayerCommander slot. Official co-op script consumers use the committed
 // script identity instead; non-Game-A/online behavior remains native.
 string libCOOC_gf_GameACommanderData (int lp_player) {

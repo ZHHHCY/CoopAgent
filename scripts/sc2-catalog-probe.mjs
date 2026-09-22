@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Independent engine experiment; never edits Game A or the official-data database.
+// Independent engine experiment; never edits Map Runtime or the official-data database.
 import { spawn, execFileSync } from 'node:child_process';
 import { randomUUID, createHash } from 'node:crypto';
 import { once } from 'node:events';
@@ -73,7 +73,7 @@ async function start() {
   await mkdir(runDirectory, { recursive: true });
   await mkdir(path.dirname(mapPath), { recursive: true });
   await mkdir(mapPath, { recursive: false });
-  // Only map geometry/MapInfo, not units, triggers, GameData, or Game A generated scripts.
+  // Only map geometry/MapInfo, not units, triggers, GameData, or Map Runtime generated scripts.
   const templateFiles = [];
   for (const entry of await readdir(template, { withFileTypes: true })) {
     if (mechanismPath) break; // The actual host will be built and copied in full.
@@ -254,7 +254,7 @@ try {
     }
     if (!cache.usable || (cache.mechanismVerdict && cache.mechanismVerdict.status !== 'pass') || (cache.panelVerdict && cache.panelVerdict.status !== 'pass')) process.exitCode = 1;
   } else {
-    console.log('Usage: node scripts/sc2-catalog-probe.mjs run|start|collect|stop [--queries FILE.json | --mechanism FILE.json] [--sc2 DIR] [--template DIR.SC2Map] [--documents DIR] [--database FILE] [--timeout SECONDS] [--run ID] [--keep-open]\nLocal output: %LOCALAPPDATA%/CoopAgent/catalog-probe. No original Game A or database writes. --mechanism builds a disposable copy. Mechanism run closes only its own SC2 process after collection or timeout; stop also requires a uniquely owned process.');
+    console.log('Usage: node scripts/sc2-catalog-probe.mjs run|start|collect|stop [--queries FILE.json | --mechanism FILE.json] [--sc2 DIR] [--template DIR.SC2Map] [--documents DIR] [--database FILE] [--timeout SECONDS] [--run ID] [--keep-open]\nLocal output: %LOCALAPPDATA%/CoopAgent/catalog-probe. No original Map Runtime or database writes. --mechanism builds a disposable copy. Mechanism run closes only its own SC2 process after collection or timeout; stop also requires a uniquely owned process.');
   }
 } catch (error) {
   console.error(error.stack ?? String(error));

@@ -45,7 +45,7 @@ function normalize(previous, now) {
 
 const explorationTools = new Set(['search', 'search_batch', 'coop_search', 'coop_search_batch']);
 const closeoutTools = new Set(['project_status', 'coop_project_status', 'scalar_solve', 'coop_scalar_solve',
-  'plan_prepare', 'coop_plan_prepare', 'plan_submit', 'coop_plan_submit', 'scalar_change', 'coop_scalar_change', 'target_confirm',
+  'plan_prepare', 'coop_plan_prepare', 'plan_submit', 'coop_plan_submit', 'target_confirm',
   'coop_target_confirm', 'task_checkpoint', 'coop_task_checkpoint']);
 
 /** Decide before dispatch whether a new tool call may do exploratory work.
@@ -58,7 +58,7 @@ export function gateTurnTool(previous, { tool, callId }) {
     return { state, action: 'dispatch', stage: state.stage };
   }
   return { state, action: 'closeout', stage: state.stage, reason: 'final-exploration-blocked',
-  allowedNextActions: ['project_status', 'scalar_solve', 'plan_prepare', 'plan_submit', 'scalar_change',
+  allowedNextActions: ['project_status', 'scalar_solve', 'plan_prepare', 'plan_submit',
     'target_confirm', 'task_checkpoint'] };
 }
 

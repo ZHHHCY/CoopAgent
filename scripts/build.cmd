@@ -12,5 +12,5 @@ set "CARGO_HOME=%PROJECT_ROOT%\.tools\cargo"
 set "RUSTUP_HOME=%PROJECT_ROOT%\.tools\rustup"
 set "PATH=%CARGO_HOME%\bin;%PROJECT_ROOT%\.tools\node;%PROJECT_ROOT%\.tools\pnpm\node_modules\.bin;%PATH%"
 cd /d "%PROJECT_ROOT%"
-call "%PROJECT_ROOT%\.tools\pnpm\node_modules\.bin\pnpm.cmd" tauri build %*
+call "%PROJECT_ROOT%\.tools\pnpm\node_modules\.bin\pnpm.cmd" tauri build --no-bundle %*
 exit /b %errorlevel%

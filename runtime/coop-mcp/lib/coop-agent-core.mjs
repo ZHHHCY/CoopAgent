@@ -173,7 +173,7 @@ function normalizeHost(hostRegistry, hostId) {
   const selected = hostId || hostRegistry.defaultHost;
   const host = hostRegistry.hosts.find((candidate) => candidate.id === selected);
   if (!host) {
-    throw new CoopToolError(`Unknown Game A host '${selected}'.`, {
+    throw new CoopToolError(`Unknown Map Runtime host '${selected}'.`, {
       availableHosts: hostRegistry.hosts.map((candidate) => candidate.id),
     });
   }
@@ -280,11 +280,11 @@ export function createCoopAgentCore(options = {}) {
       if (existsSync(latestPointerPath)) {
         const pointer = await readJson(latestPointerPath);
         if (pointer.hostId !== host.id || typeof pointer.output !== "string") {
-          throw new CoopToolError(`Invalid latest Game A build pointer for host '${host.id}'.`);
+          throw new CoopToolError(`Invalid latest Map Runtime build pointer for host '${host.id}'.`);
         }
         const pointedOutput = path.resolve(buildRoot, pointer.output);
         if (!isInside(buildRoot, pointedOutput) || pointedOutput === path.resolve(buildRoot)) {
-          throw new CoopToolError(`Latest Game A build pointer for host '${host.id}' escapes game-a/build.`);
+          throw new CoopToolError(`Latest Map Runtime build pointer for host '${host.id}' escapes game-a/build.`);
         }
         outputPath = pointedOutput;
         sourceHash = pointer.sourceHash ?? null;
@@ -616,7 +616,7 @@ export function createCoopAgentCore(options = {}) {
       !isInside(buildRoot, componentPath) ||
       !existsSync(componentPath)
     ) {
-      throw new CoopToolError("Game A builder did not return a valid generated component list.", {
+      throw new CoopToolError("Map Runtime builder did not return a valid generated component list.", {
         hostId: host.id,
         outputPath: build.outputPath,
       });

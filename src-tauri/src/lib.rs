@@ -1,6 +1,5 @@
 mod projects;
 use projects::ProjectToken;
-use portable_pty::{native_pty_system, Child, CommandBuilder, MasterPty, PtySize};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::{
@@ -8,12 +7,12 @@ use std::{
     collections::HashMap,
     fs,
     fs::OpenOptions,
-    io::{BufRead, BufReader, Read, Write},
+    io::{BufRead, BufReader, Write},
     path::{Path, PathBuf},
     process::{Command, Stdio},
     sync::{
         atomic::{AtomicBool, AtomicU64, Ordering},
-        mpsc, Arc, Mutex,
+        mpsc, Arc, Mutex, OnceLock,
     },
     thread,
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
@@ -24,25 +23,6 @@ use tauri::{ipc::Channel, AppHandle, Manager, State};
 mod agent_test_api;
 #[cfg(all(feature = "agent-test", debug_assertions))]
 pub use agent_test_api::{run_agent_test_stdio, run_agent_test_desktop};
-
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-struct RuntimeStatus {
-    app_version: &'static str,
-    platform: &'static str,
-    architecture: &'static str,
-    desktop_shell: &'static str,
-}
-
-#[tauri::command]
-fn runtime_status() -> RuntimeStatus {
-    RuntimeStatus {
-        app_version: env!("CARGO_PKG_VERSION"),
-        platform: std::env::consts::OS,
-        architecture: std::env::consts::ARCH,
-        desktop_shell: "tauri",
-    }
-}
 
 #[tauri::command]
 fn clipboard_write(text: String) -> Result<(), String> {
@@ -88,34 +68,8 @@ fn clipboard_write(text: String) -> Result<(), String> {
     }
 }
 
-#[derive(Clone, Serialize)]
-#[serde(tag = "type", rename_all = "camelCase")]
-enum TerminalEvent {
-    Output { data: Vec<u8> },
-    Exit,
-    Error { message: String },
-}
-
-struct TerminalSession {
-    master: Box<dyn MasterPty + Send>,
-    writer: Box<dyn Write + Send>,
-    child: Box<dyn Child + Send + Sync>,
-}
-
-impl Drop for TerminalSession {
-    fn drop(&mut self) {
-        let _ = self.child.kill();
-    }
-}
-
-#[derive(Default)]
-struct TerminalState {
-    session: Mutex<Option<TerminalSession>>,
-    output: Arc<Mutex<Option<Channel<TerminalEvent>>>>,
-}
-
 fn project_root() -> Result<PathBuf, String> {
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+    let source = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .parent()
         .map(PathBuf::from)
         .ok_or_else(|| "Unable to resolve the project root.".to_string())?;
@@ -123,9 +77,31 @@ fn project_root() -> Result<PathBuf, String> {
     // copy. Reject arbitrary roots; release builds never honor this override.
     #[cfg(debug_assertions)]
     if let Some(candidate) = std::env::var_os("COOPAGENT_TEST_PROJECT_ROOT") {
-        return regression_project_root(&root, Path::new(&candidate));
+        return regression_project_root(&source, Path::new(&candidate));
     }
-    Ok(root)
+    // A locally built desktop stays inside its checkout. Resolve from the exe
+    // so moving/copying that checkout cannot send writes to the build machine's path.
+    if let Ok(executable) = std::env::current_exe() {
+        if let Some(root) = application_root_from_executable(&executable) { return Ok(root); }
+    }
+    if cfg!(debug_assertions) { return Ok(source); }
+    Err("请将桌面程序保留在 CoopAgent 仓库中，并通过 start.cmd 启动。".into())
+}
+
+fn application_root_from_executable(executable: &Path) -> Option<PathBuf> {
+    executable.parent()?.ancestors().find(|root| {
+        root.join("src-tauri/tauri.conf.json").is_file()
+            && root.join("runtime/coop-mcp/server.mjs").is_file()
+            && root.join("opencode.json").is_file()
+    }).map(Path::to_path_buf)
+}
+
+#[tauri::command]
+fn open_log_directory(app: AppHandle) -> Result<(), String> {
+    use tauri_plugin_opener::OpenerExt;
+    let directory = project_root()?.join(".coopagent/logs");
+    fs::create_dir_all(&directory).map_err(|error| error.to_string())?;
+    app.opener().open_path(display_path(&directory), None::<&str>).map_err(|error| error.to_string())
 }
 
 #[cfg(debug_assertions)]
@@ -383,18 +359,6 @@ impl TraceWriter {
     }
 }
 
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-struct TraceRunSummary {
-    run_id: String,
-    trace_path: String,
-    event_count: usize,
-    started_at_ms: Option<u64>,
-    updated_at_ms: Option<u64>,
-    last_event: Option<String>,
-    last_status: Option<String>,
-}
-
 fn read_trace_records(run_id: &str) -> Result<Vec<Value>, String> {
     if !is_valid_run_id(run_id) {
         return Err("The CoopAgent trace run ID is invalid.".to_string());
@@ -423,73 +387,6 @@ fn read_trace_records(run_id: &str) -> Result<Vec<Value>, String> {
             })
         })
         .collect())
-}
-
-#[tauri::command]
-fn trace_read(run_id: String, project: Option<ProjectToken>) -> Result<Value, String> {
-    let _project_lease = projects::acquire(project.as_ref(), false)?;
-    let records = read_trace_records(&run_id)?;
-    Ok(serde_json::json!({
-        "runId": run_id,
-        "tracePath": display_path(&trace_root()?.join(format!("{run_id}.jsonl"))),
-        "events": records,
-    }))
-}
-
-#[tauri::command]
-fn trace_list(limit: Option<usize>, project: Option<ProjectToken>) -> Result<Vec<TraceRunSummary>, String> {
-    let _project_lease = projects::acquire(project.as_ref(), false)?;
-    let root = trace_root()?;
-    if !root.is_dir() {
-        return Ok(Vec::new());
-    }
-    let mut paths = fs::read_dir(&root)
-        .map_err(|error| format!("Unable to list CoopAgent traces: {error}"))?
-        .filter_map(Result::ok)
-        .map(|entry| entry.path())
-        .filter(|path| path.extension().and_then(|value| value.to_str()) == Some("jsonl"))
-        .collect::<Vec<_>>();
-    paths.sort_by_key(|path| {
-        std::cmp::Reverse(
-            path.metadata()
-                .and_then(|metadata| metadata.modified())
-                .unwrap_or(UNIX_EPOCH),
-        )
-    });
-    paths.truncate(limit.unwrap_or(20).clamp(1, 200));
-
-    paths
-        .into_iter()
-        .map(|path| {
-            let run_id = path
-                .file_stem()
-                .and_then(|value| value.to_str())
-                .unwrap_or_default()
-                .to_string();
-            let records = read_trace_records(&run_id)?;
-            let first = records.first();
-            let last = records.last();
-            Ok(TraceRunSummary {
-                run_id,
-                trace_path: display_path(&path),
-                event_count: records.len(),
-                started_at_ms: first
-                    .and_then(|event| event.get("timestampMs"))
-                    .and_then(Value::as_u64),
-                updated_at_ms: last
-                    .and_then(|event| event.get("timestampMs"))
-                    .and_then(Value::as_u64),
-                last_event: last
-                    .and_then(|event| event.get("event"))
-                    .and_then(Value::as_str)
-                    .map(str::to_string),
-                last_status: last
-                    .and_then(|event| event.get("status"))
-                    .and_then(Value::as_str)
-                    .map(str::to_string),
-            })
-        })
-        .collect()
 }
 
 const SESSION_MESSAGE_LIMIT: usize = 400;
@@ -521,6 +418,59 @@ struct AgentSessionMessage {
     role: String,
     text: String,
     created_at_ms: Option<u64>,
+}
+
+const APPLICATION_LOG_VERSION: u8 = 1;
+static APPLICATION_LOG_PATH: OnceLock<PathBuf> = OnceLock::new();
+static APPLICATION_LOG_LOCK: Mutex<()> = Mutex::new(());
+
+fn application_log_path() -> Result<PathBuf, String> {
+    if let Some(path) = APPLICATION_LOG_PATH.get() { return Ok(path.clone()); }
+    let root = project_root()?.join(".coopagent/logs");
+    fs::create_dir_all(&root).map_err(|error| format!("Unable to create the application log directory: {error}"))?;
+    let path = root.join(format!("app-{}-{}.jsonl", unix_time_millis(), std::process::id()));
+    let _ = APPLICATION_LOG_PATH.set(path);
+    Ok(APPLICATION_LOG_PATH.get().expect("application log path initialized").clone())
+}
+
+fn write_application_log_record(path: &Path, level: &str, event: &str, details: Value) -> Result<(), String> {
+    let record = serde_json::json!({
+        "logVersion": APPLICATION_LOG_VERSION,
+        "timestampMs": unix_time_millis(),
+        "processId": std::process::id(),
+        "level": level,
+        "event": event,
+        "details": bounded_trace_value(&details),
+    });
+    let mut bytes = serde_json::to_vec(&record).map_err(|error| format!("Unable to encode the application log: {error}"))?;
+    bytes.push(b'\n');
+    let _guard = APPLICATION_LOG_LOCK.lock().map_err(|error| error.to_string())?;
+    let mut file = OpenOptions::new().create(true).append(true).open(path)
+        .map_err(|error| format!("Unable to open the application log: {error}"))?;
+    file.write_all(&bytes).and_then(|_| file.flush())
+        .map_err(|error| format!("Unable to write the application log: {error}"))
+}
+
+fn app_log(level: &str, event: &str, details: Value) {
+    if let Ok(path) = application_log_path() {
+        let _ = write_application_log_record(&path, level, event, details);
+    }
+}
+
+fn initialize_application_logging() {
+    let path = application_log_path().ok();
+    let previous = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |information| {
+        app_log("error", "application.panic", serde_json::json!({ "message": information.to_string() }));
+        previous(information);
+    }));
+    app_log("info", "application.started", serde_json::json!({
+        "appVersion": env!("CARGO_PKG_VERSION"),
+        "platform": std::env::consts::OS,
+        "architecture": std::env::consts::ARCH,
+        "projectRoot": project_root().ok().map(|root| display_path(&root)),
+        "logPath": path.map(|path| display_path(&path)),
+    }));
 }
 
 #[derive(Clone, Copy, Default, Serialize)]
@@ -825,6 +775,7 @@ fn load_agent_session(session_id: &str) -> Result<AgentSessionDetail, String> {
     let output = run_opencode_command(&project_root, &["export", session_id])?;
     let export = serde_json::from_slice::<Value>(&output)
         .map_err(|error| format!("OpenCode returned an invalid session export: {error}"))?;
+    let export = run_agent_task_command("history", serde_json::json!({ "sessionId": session_id, "exported": export }))?;
     agent_session_detail_from_export(session_id, &export, &projects::workspace()?)
 }
 
@@ -889,6 +840,7 @@ struct Sc2InstallationStatus {
     valid: bool,
     database_ready: bool,
     database_build: Option<String>,
+    database_status: Value,
     root_path: Option<String>,
     build: Option<String>,
     editor_path: Option<String>,
@@ -898,18 +850,25 @@ struct Sc2InstallationStatus {
     config_path: String,
 }
 
-fn local_database_build() -> Option<String> {
-    let project_root = project_root().ok()?;
-    let baseline = fs::read_to_string(project_root.join("game-a/runtime-baseline.json")).ok()?;
-    let baseline = serde_json::from_str::<Value>(&baseline).ok()?;
-    let build = baseline.pointer("/sc2/dataBuild")?.as_str()?.to_string();
-    let database_root = coopagent_local_data_root()
-        .ok()?
-        .join("database")
-        .join(&build);
-    (database_root.join("coop.sqlite").is_file()
-        && database_root.join("merged/GameData").is_dir())
-    .then_some(build)
+fn local_database_status() -> Value {
+    let read = || -> Result<Value, String> {
+        let root = project_root()?;
+        let context = projects::context()?;
+        let workspace = context.as_ref().and_then(|c| c["workspaceRoot"].as_str()).map(PathBuf::from).unwrap_or(root.clone());
+        let mut command = Command::new(node_path(&root)?);
+        command.arg(root.join("scripts/database-status.mjs")).arg(workspace);
+        if let Some(file) = context.as_ref().and_then(|c| c["databaseFile"].as_str()) { command.arg(file); }
+        #[cfg(windows)] { use std::os::windows::process::CommandExt; command.creation_flags(0x08000000); }
+        let output = command.output().map_err(|e| e.to_string())?;
+        if !output.status.success() { return Err(String::from_utf8_lossy(&output.stderr).into()); }
+        serde_json::from_slice(&output.stdout).map_err(|e| e.to_string())
+    };
+    let status = read().unwrap_or_else(|error| serde_json::json!({
+        "ready": false, "code": "database-check-failed", "message": "数据库检查失败，请运行 setup.cmd 或重新检查。",
+        "details": { "reason": error },
+    }));
+    if status["ready"] != true { app_log("error", "database.check_failed", status.clone()); }
+    status
 }
 
 fn optional_sc2_root() -> Result<Option<String>, String> {
@@ -954,14 +913,16 @@ fn find_sc2_game_binary(root: &Path) -> Option<(String, PathBuf)> {
 
 fn validate_sc2_installation(root_path: Option<String>) -> Result<Sc2InstallationStatus, String> {
     let config_path = sc2_installation_config_path()?;
-    let database_build = local_database_build();
-    let database_ready = database_build.is_some();
+    let database_status = local_database_status();
+    let database_ready = database_status["ready"] == true;
+    let database_build = database_ready.then(|| database_status["dataBuild"].as_str().map(str::to_string)).flatten();
     let Some(raw_root) = root_path.filter(|value| !value.trim().is_empty()) else {
         return Ok(Sc2InstallationStatus {
             configured: false,
             valid: false,
             database_ready,
             database_build,
+            database_status,
             root_path: None,
             build: None,
             editor_path: None,
@@ -1035,13 +996,17 @@ fn validate_sc2_installation(root_path: Option<String>) -> Result<Sc2Installatio
         valid,
         database_ready,
         database_build,
+        database_status,
         root_path: Some(display_path(&root)),
         build: game.as_ref().map(|(build, _)| build.clone()),
         editor_path: editor.as_deref().map(display_path),
         game_path: game.as_ref().map(|(_, path)| display_path(path)),
         checks,
-        message: if valid {
-            "StarCraft II 安装已验证，可以使用 Agent。".to_string()
+        message: if valid && database_ready {
+            "StarCraft II 安装和合作模式数据库均已验证，可以使用 Agent。".to_string()
+        } else if valid {
+            "StarCraft II 安装已验证，但合作模式数据库尚未准备完成；请运行 setup.cmd。"
+                .to_string()
         } else if database_ready {
             "游戏路径不可用，但本地合作模式数据库可用，Agent 已进入离线开发模式。"
                 .to_string()
@@ -1371,174 +1336,6 @@ fn model_delete(provider_id: String, model_id: String) -> Result<ModelCatalog, S
     load_model_catalog()
 }
 
-fn publish_terminal_event(
-    output: &Arc<Mutex<Option<Channel<TerminalEvent>>>>,
-    event: TerminalEvent,
-) {
-    if let Ok(channel) = output.lock() {
-        if let Some(channel) = channel.as_ref() {
-            let _ = channel.send(event);
-        }
-    }
-}
-
-#[tauri::command]
-fn terminal_start(
-    app: AppHandle,
-    state: State<'_, TerminalState>,
-    rows: u16,
-    cols: u16,
-    on_event: Channel<TerminalEvent>, project: Option<ProjectToken>) -> Result<(), String> {
-    let _project_lease = projects::acquire(project.as_ref(), false)?;
-    let sc2_root = optional_sc2_root()?;
-    *state
-        .output
-        .lock()
-        .map_err(|_| "Terminal output channel is unavailable.".to_string())? = Some(on_event);
-
-    let mut session_guard = state
-        .session
-        .lock()
-        .map_err(|_| "Terminal state is unavailable.".to_string())?;
-
-    if session_guard.is_some() {
-        return Ok(());
-    }
-
-    let project_root = project_root()?;
-    let opencode_path = opencode_path(&project_root)?;
-
-    let pty_pair = native_pty_system()
-        .openpty(PtySize {
-            rows: rows.max(1),
-            cols: cols.max(1),
-            pixel_width: 0,
-            pixel_height: 0,
-        })
-        .map_err(|error| format!("Unable to create terminal: {error}"))?;
-
-    let mut command = CommandBuilder::new(opencode_path);
-    command.cwd(projects::workspace()?);
-    for (key, value) in projects::environment()? { command.env(key, value); }
-    command.env("PATH", runtime_path(&project_root)?);
-    if let Some(sc2_root) = sc2_root {
-        command.env("COOPAGENT_SC2_ROOT", sc2_root);
-    }
-    if let Ok(config_path) = model_config_path() {
-        if config_path.is_file() {
-            command.env("OPENCODE_CONFIG", config_path);
-        }
-    }
-    command.env("TERM", "xterm-256color");
-    command.env("COLORTERM", "truecolor");
-
-    let child = pty_pair
-        .slave
-        .spawn_command(command)
-        .map_err(|error| format!("Unable to start OpenCode: {error}"))?;
-    drop(pty_pair.slave);
-
-    let mut reader = pty_pair
-        .master
-        .try_clone_reader()
-        .map_err(|error| format!("Unable to read terminal output: {error}"))?;
-    let writer = pty_pair
-        .master
-        .take_writer()
-        .map_err(|error| format!("Unable to open terminal input: {error}"))?;
-
-    *session_guard = Some(TerminalSession {
-        master: pty_pair.master,
-        writer,
-        child,
-    });
-    drop(session_guard);
-
-    let output = Arc::clone(&state.output);
-    thread::spawn(move || {
-        let mut buffer = [0_u8; 8192];
-
-        loop {
-            match reader.read(&mut buffer) {
-                Ok(0) => break,
-                Ok(length) => publish_terminal_event(
-                    &output,
-                    TerminalEvent::Output {
-                        data: buffer[..length].to_vec(),
-                    },
-                ),
-                Err(error) => {
-                    publish_terminal_event(
-                        &output,
-                        TerminalEvent::Error {
-                            message: error.to_string(),
-                        },
-                    );
-                    break;
-                }
-            }
-        }
-
-        publish_terminal_event(&output, TerminalEvent::Exit);
-        if let Ok(mut session) = app.state::<TerminalState>().session.lock() {
-            session.take();
-        }
-    });
-
-    Ok(())
-}
-
-#[tauri::command]
-fn terminal_write(state: State<'_, TerminalState>, data: String, project: Option<ProjectToken>) -> Result<(), String> {
-    let _project_lease = projects::acquire(project.as_ref(), false)?;
-    let mut session = state
-        .session
-        .lock()
-        .map_err(|_| "Terminal state is unavailable.".to_string())?;
-    let session = session
-        .as_mut()
-        .ok_or_else(|| "OpenCode terminal is not running.".to_string())?;
-
-    session
-        .writer
-        .write_all(data.as_bytes())
-        .and_then(|_| session.writer.flush())
-        .map_err(|error| format!("Unable to write to OpenCode: {error}"))
-}
-
-#[tauri::command]
-fn terminal_resize(state: State<'_, TerminalState>, rows: u16, cols: u16, project: Option<ProjectToken>) -> Result<(), String> {
-    let _project_lease = projects::acquire(project.as_ref(), false)?;
-    let session = state
-        .session
-        .lock()
-        .map_err(|_| "Terminal state is unavailable.".to_string())?;
-    let session = session
-        .as_ref()
-        .ok_or_else(|| "OpenCode terminal is not running.".to_string())?;
-
-    session
-        .master
-        .resize(PtySize {
-            rows: rows.max(1),
-            cols: cols.max(1),
-            pixel_width: 0,
-            pixel_height: 0,
-        })
-        .map_err(|error| format!("Unable to resize the terminal: {error}"))
-}
-
-#[tauri::command]
-fn terminal_stop(state: State<'_, TerminalState>, project: Option<ProjectToken>) -> Result<(), String> {
-    let _project_lease = projects::acquire(project.as_ref(), false)?;
-    state
-        .session
-        .lock()
-        .map_err(|_| "Terminal state is unavailable.".to_string())?
-        .take();
-    Ok(())
-}
-
 #[derive(Clone, Serialize)]
 #[serde(
     tag = "type",
@@ -1727,7 +1524,7 @@ impl AgentBusyGuard {
     fn acquire(state: &AgentState) -> Result<Self, String> {
         if state.closing.load(Ordering::Acquire) { return Err("CoopAgent 正在停止任务并关闭。".into()); }
         state.running.compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
-            .map_err(|_| "CoopAgent 正在处理请求、应用修改或启动 Game A，请等待完成后重试。".to_string())?;
+            .map_err(|_| "CoopAgent 正在处理请求、应用修改或启动地图运行层，请等待完成后重试。".to_string())?;
         Ok(Self(Some(Arc::clone(&state.running))))
     }
 
@@ -1785,6 +1582,7 @@ fn request_agent_shutdown(app: &AppHandle) -> bool {
                         run.sequence += 1;
                     }
                 }
+                app_log("error", "agent.shutdown.failed", serde_json::json!({ "message": &error }));
                 eprintln!("Agent shutdown: {error}");
             }
         }
@@ -2084,7 +1882,7 @@ fn handle_agent_json_line(
                         let verification_label = output
                             .pointer("/review/userSummary/verificationLabel")
                             .and_then(Value::as_str)
-                            .unwrap_or("静态预检通过；尚未写入 Game A，也未完成试玩验证。")
+                            .unwrap_or("静态预检通过；尚未写入地图运行层，也未完成试玩验证。")
                             .to_string();
                         let runtime_verified = output
                             .pointer("/review/userSummary/runtimeVerified")
@@ -2145,7 +1943,7 @@ fn handle_agent_json_line(
                     }
                 }
             }
-            if matches!(tool, "coop_plan_submit" | "coop_scalar_change") && matches!(tool_status, "completed" | "error" | "failed") {
+            if tool == "coop_plan_submit" && matches!(tool_status, "completed" | "error" | "failed") {
                 let _ = trace.append("plan.submission.observed", tool_status, serde_json::json!({
                     "output": trace_part_value(&event, "/part/state/output"),
                     "error": trace_part_value(&event, "/part/state/error"),
@@ -2158,6 +1956,14 @@ fn handle_agent_json_line(
                     label: format!("正在调用 {tool}…"),
                 },
             );
+        }
+        Some("reasoning") => {
+            // Provider reasoning is transient activity, never answer/history text.
+            if !observations.checkpoint_saved {
+                if let Some(text) = event.pointer("/part/text").and_then(Value::as_str).filter(|text| !text.trim().is_empty()) {
+                    send_agent_event(channel, AgentEvent::Activity { label: text.to_string() });
+                }
+            }
         }
         Some("text") => {
             if let Some(text) = event.pointer("/part/text").and_then(Value::as_str) {
@@ -2190,53 +1996,10 @@ fn is_approved_draft_path(plan_path: &str) -> bool {
             .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'-')
 }
 
-fn launch_game_a(project_root: &Path, sc2_root: &str) -> Result<Value, String> {
-    let launcher = project_root.join("scripts/game-a-runtime-test.mjs");
-    if !launcher.is_file() {
-        return Err("The Game A automated runtime-test launcher is missing.".to_string());
-    }
-
-    let mut command = Command::new(node_path(project_root)?);
-    command
-        .current_dir(project_root)
-        .arg(&launcher)
-        .arg("start")
-        .env("COOPAGENT_SC2_ROOT", sc2_root)
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped());
-    #[cfg(windows)]
-    {
-        use std::os::windows::process::CommandExt;
-        command.creation_flags(0x08000000);
-    }
-
-    projects::configure(&mut command)?;
-    let output = command
-        .output()
-        .map_err(|error| format!("Unable to start the Game A automated runtime test: {error}"))?;
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
-        let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
-        return Err(if !stderr.is_empty() {
-            stderr
-        } else if !stdout.is_empty() {
-            stdout
-        } else {
-            format!(
-                "Game A automated runtime-test launcher exited with {}.",
-                output.status
-            )
-        });
-    }
-
-    serde_json::from_slice::<Value>(&output.stdout)
-        .map_err(|error| format!("Game A automated runtime test returned invalid JSON: {error}"))
-}
-
 fn launch_game_a_editor(project_root: &Path, sc2_root: &str) -> Result<Value, String> {
     let launcher = project_root.join("game-a/scripts/launch-game-a.ps1");
     if !launcher.is_file() {
-        return Err("The Game A editor launcher is missing.".to_string());
+        return Err("The Map Runtime editor launcher is missing.".to_string());
     }
 
     let mut command = Command::new("powershell.exe");
@@ -2260,7 +2023,7 @@ fn launch_game_a_editor(project_root: &Path, sc2_root: &str) -> Result<Value, St
     projects::configure(&mut command)?;
     let output = command
         .output()
-        .map_err(|error| format!("Unable to start the Game A editor launcher: {error}"))?;
+        .map_err(|error| format!("Unable to start the Map Runtime editor launcher: {error}"))?;
     let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
     let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
     if !output.status.success() {
@@ -2269,15 +2032,41 @@ fn launch_game_a_editor(project_root: &Path, sc2_root: &str) -> Result<Value, St
         } else if !stdout.is_empty() {
             stdout
         } else {
-            format!("Game A editor launcher exited with {}.", output.status)
+            format!("Map Runtime editor launcher exited with {}.", output.status)
         });
     }
 
-    Ok(serde_json::json!({
-        "status": "ok",
-        "editor": "launched",
-        "output": stdout,
-    }))
+    let mut result = parse_editor_launch_result(&stdout)?;
+    result["output"] = stdout.into();
+    Ok(result)
+}
+
+fn parse_editor_launch_result(stdout: &str) -> Result<Value, String> {
+    stdout.lines().rev()
+        .find_map(|line| line.strip_prefix("COOPAGENT_EDITOR_RESULT "))
+        .and_then(|line| serde_json::from_str(line).ok())
+        .filter(|result: &Value| result["status"] == "ok" && result["editor"] == "opened"
+            && result["documentName"].as_str().is_some_and(|name| !name.trim().is_empty())
+            && result["manualStartRequired"].is_boolean())
+        .ok_or_else(|| "编辑器启动器未确认最新地图已打开，请重试。".to_string())
+}
+
+#[tauri::command]
+async fn game_a_editor_status(document_name: Option<String>, project: Option<ProjectToken>) -> Result<Value, String> {
+    // Validate the caller, then release immediately: this system process query
+    // reads no workspace files and must not block switching projects while polling.
+    drop(projects::acquire(project.as_ref(), false)?);
+    tauri::async_runtime::spawn_blocking(move || {
+        let mut command = Command::new("powershell.exe");
+        command.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-File"])
+            .arg(project_root()?.join("game-a/scripts/editor-status.ps1"));
+        if let Some(name) = document_name { command.arg("-DocumentName").arg(name); }
+        #[cfg(windows)]
+        { use std::os::windows::process::CommandExt; command.creation_flags(0x08000000); }
+        let output = command.output().map_err(|error| error.to_string())?;
+        if !output.status.success() { return Err(String::from_utf8_lossy(&output.stderr).trim().to_string()); }
+        serde_json::from_slice(&output.stdout).map_err(|error| error.to_string())
+    }).await.map_err(|error| error.to_string())?
 }
 
 fn latest_game_a_build(_project_root: &Path) -> Option<Value> {
@@ -3062,78 +2851,27 @@ async fn change_summary_list( project: Option<ProjectToken>) -> Result<Value, St
             .map_err(|error| format!("Unable to query applied change summaries: {error}"))?;
         if !output.status.success() {
             let error = String::from_utf8_lossy(&output.stderr).trim().to_string();
-            return Err(if error.is_empty() {
+            let diagnostic = error.lines().rev().find_map(|line| serde_json::from_str::<Value>(line).ok().filter(|v| v["message"].is_string()));
+            let message = if let Some(diagnostic) = &diagnostic {
+                diagnostic["message"].as_str().unwrap().to_string()
+            } else if error.is_empty() {
                 format!("Change-summary query exited with {}.", output.status)
             } else {
                 error
-            });
+            };
+            app_log("error", "change_summary.query_failed", serde_json::json!({
+                "message": &message,
+                "exitCode": output.status.code(),
+                "diagnostic": diagnostic,
+                "project": projects::context()?,
+            }));
+            return Err(message);
         }
         serde_json::from_slice::<Value>(&output.stdout)
             .map_err(|error| format!("Change-summary query returned invalid JSON: {error}"))
     })
     .await
     .map_err(|error| format!("Change-summary task failed: {error}"))?
-}
-
-#[tauri::command]
-async fn game_a_launch(state: State<'_, AgentState>, project: Option<ProjectToken>) -> Result<Value, String> {
-    let _project_lease = projects::acquire(project.as_ref(), false)?;
-    let busy = AgentBusyGuard::acquire(&state)?;
-    let sc2_installation = require_sc2_installation()?;
-    let sc2_root = sc2_installation
-        .root_path
-        .ok_or_else(|| "StarCraft II path is unavailable.".to_string())?;
-
-    tauri::async_runtime::spawn_blocking(move || {
-        let _busy = busy;
-        let project_root = project_root()?;
-        let mut trace = TraceWriter::create()?;
-        let run_id = trace.run_id().to_string();
-        let trace_path = trace.display_path();
-        let _ = trace.append(
-            "run.created",
-            "ok",
-            serde_json::json!({ "source": "manual_game_a_launch", "tracePath": trace_path }),
-        );
-        let _ = trace.append("game_a.launch.started", "running", serde_json::json!({}));
-        match launch_game_a(&project_root, &sc2_root) {
-            Ok(mut result) => {
-                let build = latest_game_a_build(&project_root);
-                let _ = trace.append(
-                    "game_a.build.completed",
-                    "ok",
-                    build
-                        .clone()
-                        .unwrap_or_else(|| serde_json::json!({ "evidence": "unavailable" })),
-                );
-                let _ = trace.append("game_a.runtime_test.launched", "ok", result.clone());
-                let _ = trace.append("run.completed", "ok", serde_json::json!({}));
-                if let Some(object) = result.as_object_mut() {
-                    object.insert("runId".to_string(), Value::String(run_id));
-                    object.insert("tracePath".to_string(), Value::String(trace_path));
-                    if let Some(build) = build {
-                        object.insert("build".to_string(), build);
-                    }
-                }
-                Ok(result)
-            }
-            Err(error) => {
-                let _ = trace.append(
-                    "game_a.launch.failed",
-                    "error",
-                    serde_json::json!({ "message": error }),
-                );
-                let _ = trace.append(
-                    "run.failed",
-                    "error",
-                    serde_json::json!({ "stage": "game_a_launch", "message": error }),
-                );
-                Err(error)
-            }
-        }
-    })
-    .await
-    .map_err(|error| format!("Game A launch task failed: {error}"))?
 }
 
 #[tauri::command]
@@ -3190,7 +2928,7 @@ async fn game_a_editor_launch(state: State<'_, AgentState>, project: Option<Proj
         }
     })
     .await
-    .map_err(|error| format!("Game A editor launch task failed: {error}"))?
+    .map_err(|error| format!("Map Runtime editor launch task failed: {error}"))?
 }
 
 fn run_plan_jobs_command(operation: &str, value: Option<&str>) -> Result<Value, String> {
@@ -3400,7 +3138,7 @@ async fn patch_plan_apply_confirmed(
 
         let runtime_launch = serde_json::json!({
             "status": "skipped",
-            "reason": "Game A is launched only when the user explicitly requests it."
+            "reason": "Map Runtime is launched only when the user explicitly requests it."
         });
         let _ = trace.append(
             "run.completed",
@@ -3941,8 +3679,8 @@ pub fn run() {
 }
 
 fn run_desktop(_test_stdio: bool) {
+    initialize_application_logging();
     tauri::Builder::default()
-        .manage(TerminalState::default())
         .manage(AgentState::default())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
@@ -3957,7 +3695,15 @@ fn run_desktop(_test_stdio: bool) {
                 agent_test_api::attach_desktop(app.handle().clone())?;
                 return Ok(());
             }
-            projects::initialize().map_err(std::io::Error::other)?;
+            if let Err(error) = projects::initialize() {
+                app_log("error", "application.setup.failed", serde_json::json!({ "stage": "projects", "message": &error }));
+                // Keep the shell available so project_list can report/retry.
+                return Ok(());
+            }
+            if projects::context()?.is_none() {
+                app_log("info", "application.ready", serde_json::json!({ "project": null }));
+                return Ok(());
+            }
             if projects::context()?.is_some_and(|c| !c["openError"].is_null()) { return Ok(()); }
             // Resume only durable selections after restart, independently of
             // which page is mounted. Mere preparations are never submitted.
@@ -3966,30 +3712,26 @@ fn run_desktop(_test_stdio: bool) {
                 thread::spawn(move || {
                     let _busy = busy;
                     if let Err(error) = run_plan_jobs_command("recover", None) {
+                        app_log("error", "submission.recovery.failed", serde_json::json!({ "message": &error }));
                         eprintln!("Submission recovery: {error}");
                     }
                 });
             }
+            app_log("info", "application.ready", serde_json::json!({ "project": projects::context()? }));
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             projects::project_list,
             projects::project_change,
             projects::project_ui,
-            runtime_status,
             clipboard_write,
+            open_log_directory,
             sc2_installation_status,
             sc2_installation_set,
             model_list,
             model_save,
             model_select,
             model_delete,
-            terminal_start,
-            terminal_write,
-            terminal_resize,
-            terminal_stop,
-            trace_list,
-            trace_read,
             agent_session_list,
             agent_session_read,
             agent_session_delete,
@@ -4002,21 +3744,75 @@ fn run_desktop(_test_stdio: bool) {
             agent_task_status,
             plan_submission_status,
             plan_submission_retry,
-            game_a_launch,
             game_a_editor_launch,
+            game_a_editor_status,
             patch_plan_apply_confirmed
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
-        .run(|app, event| {
-            if let tauri::RunEvent::ExitRequested { api, .. } = event {
+        .run(|app, event| match event {
+            tauri::RunEvent::ExitRequested { api, .. } => {
+                app_log("info", "application.exit_requested", serde_json::json!({}));
                 if request_agent_shutdown(app) { api.prevent_exit(); }
             }
+            tauri::RunEvent::Exit => app_log("info", "application.exited", serde_json::json!({})),
+            _ => {}
         });
 }
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn desktop_resources_follow_the_executable_checkout_instead_of_the_compile_path() {
+        let base = std::env::temp_dir().join(format!("coop-desktop-roots-{}", super::new_run_id()));
+        for copy in ["original", "moved copy"] {
+            let root = base.join(copy);
+            for file in ["src-tauri/tauri.conf.json", "runtime/coop-mcp/server.mjs", "opencode.json"] {
+                let path = root.join(file);
+                std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+                std::fs::write(path, "fixture").unwrap();
+            }
+            let exe = root.join("src-tauri/target/release/coopagent.exe");
+            assert_eq!(super::application_root_from_executable(&exe), Some(root));
+        }
+        assert_eq!(super::application_root_from_executable(&base.join("unrelated/coopagent.exe")), None);
+        assert!(base.parent().is_some_and(|p| p == std::env::temp_dir()));
+        std::fs::remove_dir_all(base).unwrap();
+    }
+
+    #[test]
+    fn editor_launch_requires_document_confirmation_and_keeps_manual_start_guidance() {
+        for manual in [false, true] {
+            let line = serde_json::json!({"status":"ok", "editor":"opened",
+                "documentName":"GameA-Test-abcdef123456.SC2Map", "manualStartRequired":manual});
+            let result = super::parse_editor_launch_result(&format!("build output\r\nCOOPAGENT_EDITOR_RESULT {line}\r\n")).unwrap();
+            assert_eq!(result["documentName"], "GameA-Test-abcdef123456.SC2Map");
+            assert_eq!(result["manualStartRequired"], manual);
+        }
+        for stdout in ["build completed", "{\"status\":\"ok\",\"editor\":\"launched\"}",
+            "COOPAGENT_EDITOR_RESULT broken",
+            "COOPAGENT_EDITOR_RESULT {\"status\":\"ok\",\"editor\":\"opened\",\"documentName\":\"\",\"manualStartRequired\":false}"] {
+            assert!(super::parse_editor_launch_result(stdout).is_err());
+        }
+    }
+
+    #[test]
+    fn application_log_records_individually_valid_json_lines() {
+        let path = std::env::temp_dir().join(format!("coopagent-app-log-{}.jsonl", super::new_run_id()));
+        super::write_application_log_record(&path, "info", "test.started", serde_json::json!({ "value": 1 }))
+            .expect("first application event should be written");
+        super::write_application_log_record(&path, "error", "test.failed", serde_json::json!({ "message": "fixture" }))
+            .expect("second application event should be written");
+        let records = std::fs::read_to_string(&path).expect("application log should be readable").lines()
+            .map(|line| serde_json::from_str::<serde_json::Value>(line).expect("line should be valid JSON"))
+            .collect::<Vec<_>>();
+        assert_eq!(records.len(), 2);
+        assert_eq!(records[0]["logVersion"], 1);
+        assert_eq!(records[0]["event"], "test.started");
+        assert_eq!(records[1]["level"], "error");
+        std::fs::remove_file(path).expect("test application log should be removable");
+    }
+
     #[test]
     #[cfg(windows)]
     fn setup_selection_is_readable_and_valid_for_the_desktop() {
@@ -4537,5 +4333,31 @@ mod tests {
         assert!(!raw.contains("other-session"));
         assert_eq!(session.as_deref(), Some("s1"));
         std::fs::remove_file(path).unwrap();
+    }
+
+    #[test]
+    fn model_reasoning_is_transient_activity_without_becoming_the_answer() {
+        let path = std::env::temp_dir().join(format!("coop-activity-{}.jsonl", super::new_run_id()));
+        let mut trace = TraceWriter { run_id: "run-1".into(), path: path.clone(), sequence: 0 };
+        let snapshot = std::sync::Arc::new(std::sync::Mutex::new(Some(snapshot_fixture())));
+        let sink = AgentEventSink { project: None, run_id: "run-1".into(), snapshot: snapshot.clone(),
+            channel: tauri::ipc::Channel::new(|_| Ok(())) };
+        let (mut session, mut text, mut ready) = (None, String::new(), false);
+        let mut observations = AgentObservationState::default();
+        let reasoning = |value: &str| serde_json::json!({ "type": "reasoning", "sessionID": "s1", "part": { "text": value } }).to_string();
+        handle_agent_json_line(&reasoning("正在核对字段"), &sink, &mut session, &mut text, &mut observations, &mut ready, &mut trace);
+        assert_eq!(snapshot.lock().unwrap().as_ref().unwrap().activity, "正在核对字段");
+        assert!(snapshot.lock().unwrap().as_ref().unwrap().text.is_empty());
+        assert!(text.is_empty());
+        handle_agent_json_line(&reasoning("  "), &sink, &mut session, &mut text, &mut observations, &mut ready, &mut trace);
+        assert_eq!(snapshot.lock().unwrap().as_ref().unwrap().activity, "正在核对字段");
+        let answer = serde_json::json!({ "type": "text", "sessionID": "s1", "part": { "text": "当前生命值为45。" } });
+        handle_agent_json_line(&answer.to_string(), &sink, &mut session, &mut text, &mut observations, &mut ready, &mut trace);
+        observations.checkpoint_saved = true;
+        handle_agent_json_line(&reasoning("交付后到达的旧内容"), &sink, &mut session, &mut text, &mut observations, &mut ready, &mut trace);
+        assert_eq!(snapshot.lock().unwrap().as_ref().unwrap().activity, "正在核对字段");
+        assert_eq!(snapshot.lock().unwrap().as_ref().unwrap().text, "当前生命值为45。");
+        assert_eq!(text, "当前生命值为45。");
+        let _ = std::fs::remove_file(path);
     }
 }

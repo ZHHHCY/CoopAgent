@@ -12,6 +12,8 @@
   gap: 10px;
 }
 
+.game-action-map { justify-self: start; color: var(--muted); font-size: 12px; }
+
 .game-action-button {
   min-width: 0;
   min-height: 44px;
@@ -88,12 +90,6 @@
   letter-spacing: 0.02em;
 }
 
-.game-action-button:not(.game-action-primary) {
-  min-width: 120px;
-  min-height: 38px;
-  padding: 8px 12px;
-}
-
 .game-action-button:disabled {
   cursor: not-allowed;
   opacity: 0.7;
@@ -107,20 +103,23 @@
   opacity: 0.76;
 }
 
-.game-action-primary.launched {
+.game-action-primary.ready {
   border-color: rgba(122, 223, 155, 0.72);
 }
+
+.game-action-primary.stale { border-color: #f4c461; }
+.game-action-hint {
+  width: 100%;
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.game-action-hint.stale { color: #f4c461; }
+.game-action-hint.ready { color: #a4deb3; }
 
 .game-action-primary.error {
   border-color: rgba(239, 117, 111, 0.8);
   color: #ffc1b9;
-}
-
-.game-action-error {
-  width: 100%;
-  margin: 0;
-  color: #ffc1b9;
-  font-size: 12px;
-  line-height: 1.45;
-  overflow-wrap: anywhere;
 }

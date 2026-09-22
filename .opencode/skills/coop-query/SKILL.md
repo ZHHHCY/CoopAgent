@@ -1,6 +1,6 @@
 ---
 name: coop-query
-description: 查询或比较合作模式游戏数据与当前 Game A 数值，只读回答。
+description: 查询或比较合作模式游戏数据与当前地图运行层数值，只读回答。
 ---
 
 # 查询游戏数据

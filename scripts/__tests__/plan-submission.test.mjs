@@ -12,7 +12,6 @@ import { acquireGameALock } from "../lib/game-a-transaction.mjs";
 import { buildCascDatabase } from "../lib/casc-database-builder.mjs";
 import { createCoopAgentCore } from "../../runtime/coop-mcp/lib/coop-agent-core.mjs";
 import { validatePrestigeContract } from '../lib/prestige-contract.mjs';
-import {createChangeInterface} from '../../runtime/coop-mcp/lib/change-interface.mjs';
 
 const repository = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 async function fixture(t) {
@@ -42,30 +41,13 @@ async function fixture(t) {
   return { repoRoot, options, service, prepare, current, put, plan, databaseFile, catalogRoot };
 }
 
-test('single-call change uses real preflight and atomic executor, including dry run, idempotency and stale expect',async t=>{
-  const f=await fixture(t);
-  const change=createChangeInterface({baseline:async()=>({schemaVersion:2,sc2:{dataBuild:'B97579'}}),core:{
-    preparePlan:async({plan})=>f.prepare('capability-test',plan),
-    submitPlan:args=>f.service.submit(args),
-  }});
-  const input={id:'single-change',summary:'Synthetic label',scope:f.plan.scope,isolation:f.plan.isolation,operations:f.plan.operations};
-  await change({...input,dryRun:true});assert.equal(await f.current(),'Test/Name=Old\n');
-  assert.equal((await change(input)).status,'applied');assert.equal(await f.current(),'Test/Name=New\n');
-  assert.equal((await change(input)).status,'applied');assert.equal(await f.current(),'Test/Name=New\n');
-  await assert.rejects(change({...input,id:'stale-change',operations:[{...input.operations[0],expect:'Old',value:'Bad'}]}));
-  assert.equal(await f.current(),'Test/Name=New\n');
-});
-
-test('single-call multi-edit failure leaves every requested item unchanged',async t=>{
-  const f=await fixture(t);
-  const change=createChangeInterface({baseline:async()=>({schemaVersion:2,sc2:{dataBuild:'B97579'}}),core:{
-    preparePlan:async({plan})=>f.prepare('multi-test',plan),submitPlan:args=>f.service.submit(args),
-  }});
-  const plan={...f.plan,id:'multi-failure',operations:[...f.plan.operations,
-    {opId:'wrong-current-life',kind:'catalog.set',catalog:'Unit',object:'TestUnit',path:'LifeMax',expect:999,value:120}]};
-  await assert.rejects(change({plan}));
-  assert.equal(await f.current(),'Test/Name=Old\n');
-  assert.deepEqual(f.service.status(),[]);
+test('multi-edit preflight failure leaves every requested item unchanged', async t => {
+  const f = await fixture(t);
+  const plan = { ...f.plan, id: 'multi-failure', operations: [...f.plan.operations,
+    { opId: 'wrong-current-life', kind: 'catalog.set', catalog: 'Unit', object: 'TestUnit', path: 'LifeMax', expect: 999, value: 120 }] };
+  await assert.rejects(f.prepare('multi-test', plan));
+  assert.equal(await f.current(), 'Test/Name=Old\n');
+  assert.deepEqual(f.service.status(), []);
 });
 
 test('P2 request cannot prepare unconditional stats even when title and summary claim P2', async t => {
@@ -86,13 +68,6 @@ test('P2 request cannot prepare unconditional stats even when title and summary 
     catalogRoot: f.catalogRoot, databaseFile: f.databaseFile, taskId: task.id, runId: 'p2-run' }), /original request specifies P2.*TestPrestige/);
   assert.deepEqual(f.service.status(), []);
   assert.equal(await f.current(), 'Test/Name=Old\n');
-  const change=createChangeInterface({baseline:async()=>({schemaVersion:2,sc2:{dataBuild:'B97579'}}),core:{
-    preparePlan:({plan:content})=>f.service.prepare({planContent:content,planPath:'game-a/drafts/p2-stats.patch-plan.json',catalogRoot:f.catalogRoot,
-      databaseFile:f.databaseFile,taskId:task.id,runId:'p2-run'}),
-    submitPlan:args=>f.service.submit(args),
-  }});
-  await assert.rejects(change({plan}),/original request specifies P2/);
-  assert.deepEqual(f.service.status(),[],'single-call facade cannot bypass the original prestige constraint');
   assert.doesNotThrow(() => validatePrestigeContract(plan, { databaseFile: f.databaseFile, request: '修改基础生命；不要改 P2 机制。' }));
   assert.doesNotThrow(() => validatePrestigeContract(plan, { databaseFile: f.databaseFile,
     request: '把基础生命改为 200。', requestReplies: ['同步保留 P2 的 75% 减免'] }),
@@ -233,7 +208,7 @@ test('core prepare saves a real failed rehearsal diagnostic for the next turn', 
 });
 
 for (const input of ["core", "baseline", "database", "catalog", "schema", "receipts"]) {
-  test(`submission refuses changed ${input} context without writing Game A`, async (t) => {
+  test(`submission refuses changed ${input} context without writing Map Runtime`, async (t) => {
     const f = await fixture(t);
     const prepared = await f.prepare();
     if (input === "core") await f.put("game-a/core/GameA.SC2Mod/independent.txt", "external edit");

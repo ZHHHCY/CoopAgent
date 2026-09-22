@@ -27,7 +27,7 @@ export default defineConfig(async () => ({
     watch: {
       // Native build output and local tools/test profiles are not frontend
       // sources. WebView cache files can be exclusively locked on Windows.
-      ignored: ["**/src-tauri/**", "**/.tools/**"],
+      ignored: ["**/src-tauri/**", "**/.tools/**", "**/.coopagent/**", "**/projects/**"],
     },
   },
 }));

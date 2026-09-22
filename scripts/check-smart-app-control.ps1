@@ -1,4 +1,4 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 
 $policyPath = 'HKLM:\SYSTEM\CurrentControlSet\Control\CI\Policy'
 $state = $null
@@ -12,12 +12,12 @@ catch {
 
 if ($state -eq 1) {
     Write-Host ''
-    Write-Host 'CoopAgent cannot compile while Windows Smart App Control is On.' -ForegroundColor Red
-    Write-Host 'Rust build scripts are generated locally and are unsigned, so Windows blocks them with error 4551.' -ForegroundColor Yellow
+    Write-Host 'Windows 智能应用控制开启时，CoopAgent 无法完成编译。' -ForegroundColor Red
+    Write-Host 'Rust 构建脚本由本机生成且没有签名，因此 Windows 会以错误 4551 阻止它们。' -ForegroundColor Yellow
     Write-Host ''
-    Write-Host 'Run "Open Smart App Control Settings.cmd" from the project folder,'
-    Write-Host 'then choose: App & browser control > Smart App Control settings > Off.'
-    Write-Host 'After changing it, run CoopAgent again.'
+    Write-Host '请在项目目录运行 "scripts\open-smart-app-control-settings.cmd"，'
+    Write-Host '然后选择：应用和浏览器控制 > 智能应用控制设置 > 关闭。'
+    Write-Host '更改后重新运行 CoopAgent。'
     Write-Host ''
     exit 1
 }

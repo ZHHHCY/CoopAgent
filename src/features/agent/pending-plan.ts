@@ -12,7 +12,7 @@ export function pendingFromSubmission(job: SubmissionJob): PendingPatchPlan {
     operationCount: result.report.operations?.length ?? 0,
     changedFiles: result.report.changedFiles, summaryItems: summary?.items ?? [],
     verificationLevel: job.state === "applied" ? "applied-to-source" : "static-preflight",
-    verificationLabel: job.state === "applied" ? "已写入 Game A 并生成回执；未启动游戏。"
+    verificationLabel: job.state === "applied" ? "已写入地图运行层并生成回执；未启动游戏。"
       : active ? "后端已保存提交任务，正在处理；关闭页面不会撤销提交。" : "提交未完成，未报告为已应用。",
     runtimeVerified: false, status: active ? "applying" : job.state === "applied" ? "applied" : "error",
     receiptPath: job.state === "applied" ? result.report.receiptRecord : undefined,

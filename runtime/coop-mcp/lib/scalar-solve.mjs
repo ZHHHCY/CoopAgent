@@ -108,7 +108,7 @@ function upgradeEntries(search, context) {
   return [...records.values()].sort((a, b) => a.index - b.index);
 }
 
-/** Read one consistent Game A snapshot. Evaluate only the explicitly selected
+/** Read one consistent Map Runtime snapshot. Evaluate only the explicitly selected
  * prestige and recorded same-field commander Set; never claim live-game totals. */
 export function solveScalar(search, input) {
   if (!input.commanderId || !input.target?.catalog || !input.target?.objectId || !input.target?.path) {
@@ -182,7 +182,7 @@ export function solveScalar(search, input) {
         verificationQuery: { operation: 'entity.get', ...context, ...target },
         note: already
           ? 'No operation is needed for this field in the evaluated context. Do not submit an equal expect/value change.'
-          : 'Reuse operation and requiredDependsOn; assign a unique opId when batching. Consult docs/scalar-capabilities.md for the change envelope. Investigate further only for a specific missing relevant fact; runtimeVerified:false alone is not a diagnostic.',
+          : 'Reuse operation and requiredDependsOn; assign a unique opId when batching. Consult .opencode/skills/coop-scalar-change/plan.md for the plan envelope. Investigate further only for a specific missing relevant fact; runtimeVerified:false alone is not a diagnostic.',
       },
       ...(input.roundingDecimals !== undefined ? { rounding: { decimals: input.roundingDecimals, mode: 'half-away-from-zero' } } : {}),
     };

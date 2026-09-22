@@ -7,4 +7,10 @@
 .project-modal { position: fixed; inset: 0; z-index: 100; background: #0009; display: grid; place-items: center; }
 .project-modal form { background: #15222e; color: #e5eef5; padding: 24px; border-radius: 12px; width: min(480px, 90vw); display: grid; gap: 16px; }
 .project-modal label { display: grid; gap: 8px; }
-.project-modal form > div { display: flex; justify-content: end; gap: 10px; }
+.project-modal form > div:not(.error-notice) { display: flex; justify-content: end; gap: 10px; }
+.project-toolbar > .open-logs { margin: 0 0 0 auto; }
+.project-shell > .error-notice { border-radius: 0; }
+.project-modal form { max-height: 90vh; overflow-y: auto; }
+.project-welcome { margin: auto; max-width: 640px; padding: 48px; color: #e5eef5; text-align: center; }
+.project-welcome p { color: #9ab4c5; margin: 24px 0; }
+.project-welcome button { background: #1c3c50; color: #e5eef5; border: 1px solid #5da0bd; border-radius: 5px; padding: 12px 20px; margin: 8px; cursor: pointer; }

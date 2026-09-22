@@ -18,7 +18,7 @@ import { createEngineCatalogSchema, importEngineCatalog, readEngineCache } from 
 import { buildCoopSemantics } from './coop-semantics.mjs';
 import { normalizeUpgradeArrays } from './upgrade-array-projection.mjs';
 
-const DATABASE_SCHEMA_VERSION = 2;
+import { DATABASE_SCHEMA_VERSION } from './database-location.mjs';
 const CATALOG_PROJECTION_VERSION = 3;
 // Official co-op expansion profile. Multiplayer variants are separate data
 // branches, not additive expansion dependencies (native B97579 array regression).

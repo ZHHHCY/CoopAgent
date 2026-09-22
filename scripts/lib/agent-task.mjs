@@ -17,9 +17,10 @@ export const PHASE_BUDGET_MS = TURN_HARD_BUDGET_MS;
 export const MAX_AUTO_PHASES = 6;
 const identity = (value) => typeof value === 'string' && /^[a-zA-Z0-9-]{1,100}$/.test(value);
 const digest = (value) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
+export const phasePromptKey = digest;
 const text = (value, max) => typeof value === 'string' && value.trim().length > 0 && value.length <= max;
 
-// Task state is NOT a second PatchPlan and never writes Game A content.
+// Task state is NOT a second PatchPlan and never writes Map Runtime content.
 export function createAgentTaskStore(repoRoot, { now = Date.now, budgetMs,
   harnessEnabled = ITERATIVE_HARNESS_ENABLED, turnBudget = DEFAULT_TURN_BUDGET } = {}) {
   const effectiveBudgetMs = budgetMs === undefined ? (harnessEnabled ? PHASE_BUDGET_MS : null) : budgetMs;
@@ -225,6 +226,8 @@ export function createAgentTaskStore(repoRoot, { now = Date.now, budgetMs,
         }
         task.runId = runId; task.status = 'ready'; task.autoPhases = 0; task.noProgressPhases = 0;
         task.harnessEnabled = harnessEnabled;
+        task.conversationInputs ??= [];
+        task.conversationInputs.push({ id: runId, text: (answer ?? prompt).trim(), createdAt: now(), dispatches: [] });
         return save(db, task);
       }
       if (db.prepare('SELECT 1 FROM tasks WHERE id=?').get(id)) throw Error('Task already exists');
@@ -232,7 +235,8 @@ export function createAgentTaskStore(repoRoot, { now = Date.now, budgetMs,
       return save(db, { id, projectId: projectIdentity(repoRoot), runId, prompt: prompt.trim(), status: 'ready', phase: 0, autoPhases: 0, history: [],
         turns: [turn], currentTurnId: turn.id, requestItems: appendRequestItem([], { id: 'request-1', turnId: turn.id,
           message: prompt, createdAt: turn.createdAt }), checkpoint: null, lastCheckpoint: null,
-        draftPath: null, selectedPreparation: null, harnessEnabled });
+        draftPath: null, selectedPreparation: null, harnessEnabled,
+        conversationInputs: [{ id: runId, text: prompt.trim(), createdAt: turn.createdAt, dispatches: [] }] });
     });
   }
   function open({ id, runId }) {
@@ -263,7 +267,9 @@ export function createAgentTaskStore(repoRoot, { now = Date.now, budgetMs,
         requestItems: task.requestItems,
         evidence: listEvidence(db, id).slice(-30).map((e) => ({ ...e,
           query: Object.fromEntries(Object.entries(e.query).filter(([key]) => ['operation', 'catalog', 'objectId', 'commanderId', 'path', 'fieldPrefix', 'query', 'planId', 'planSha256'].includes(key))) })) };
-      return { task: save(db, task), context, prompt: phasePrompt(task, context) };
+      const prompt = phasePrompt(task, context);
+      task.conversationInputs?.find(input => input.id === runId)?.dispatches.push({ key: phasePromptKey(prompt), startedAt: task.startedAt });
+      return { task: save(db, task), context, prompt };
     });
   }
   const guard = ({ id, runId, phase }) => transaction((db) => active(db, id, runId, phase));

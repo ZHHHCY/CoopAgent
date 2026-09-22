@@ -1,0 +1,35 @@
+.error-notice {
+  min-width: 0;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #965e55;
+  border-radius: 4px;
+  color: #f2c3ba;
+  background: #2a2328;
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.error-notice > strong { display: block; color: #ffd5cb; }
+.error-notice > p { margin: 5px 0 8px; }
+.error-notice summary { cursor: pointer; }
+.error-notice pre {
+  max-height: 180px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: 11px/1.5 Consolas, monospace;
+}
+.open-logs { display: block; margin-top: 8px; }
+.open-logs > button {
+  padding: 3px 7px;
+  border: 1px solid #496777;
+  border-radius: 3px;
+  background: #1c2a36;
+  color: #d7e5ec;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+}
+.open-logs > button:disabled { opacity: 0.6; cursor: default; }
+.open-logs > small { display: block; margin-top: 5px; }

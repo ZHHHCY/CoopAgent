@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$StarCraftRoot,
     [string]$Output,
@@ -18,12 +18,12 @@ $bootstrap = Join-Path $PSScriptRoot 'casc-bootstrap.ps1'
 $inspector = Join-Path $PSScriptRoot 'casc-inspect.py'
 
 if (-not (Test-Path -LiteralPath $StarCraftRoot)) {
-    throw "StarCraft II was not found: $StarCraftRoot"
+    throw "找不到 StarCraft II：$StarCraftRoot"
 }
 
-$dllPath = & $bootstrap | Select-Object -Last 1
+$dllPath = & $bootstrap | ForEach-Object { Write-Host $_; $_ } | Select-Object -Last 1
 if (-not (Test-Path -LiteralPath $dllPath)) {
-    throw "CASCLib was not found after bootstrap: $dllPath"
+    throw "工具准备完成后仍找不到 CASCLib：$dllPath"
 }
 
 $arguments = @($inspector, '--sc2', $StarCraftRoot, '--dll', $dllPath)
@@ -33,7 +33,7 @@ if ($Output) {
 
 & python @arguments
 if ($LASTEXITCODE -ne 0) {
-    throw "CASC inspection failed (Python exit code $LASTEXITCODE)."
+    throw "CASC 读取失败（Python 退出代码 $LASTEXITCODE）。"
 }
 
 $buildInfoLines = Get-Content -LiteralPath (Join-Path $StarCraftRoot '.build.info')
@@ -48,7 +48,7 @@ $resolvedOutput = if ($Output) {
     Join-Path $env:LOCALAPPDATA "CoopAgent\casc\$buildNumber"
 }
 
-Write-Host "CASC inspection output: $resolvedOutput"
+Write-Host "CASC 提取结果：$resolvedOutput"
 if (-not $NoOpen) {
     Start-Process explorer.exe -ArgumentList $resolvedOutput
 }

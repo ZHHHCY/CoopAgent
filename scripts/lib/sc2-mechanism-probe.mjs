@@ -269,7 +269,7 @@ export async function prepareMechanismProbe({ config: rawConfig, runDirectory, m
   const scriptPath = path.join(mapPath, 'MapScript.galaxy');
   let script = await readFile(scriptPath, 'utf8');
   if ((script.match(/void InitMap\s*\(\s*\)\s*\{/g) ?? []).length !== 1) throw new Error('Expected one host InitMap');
-  if (script.split('include "scripts/generated/GameABootstrap"').length !== 2) throw new Error('Expected one actual Game A bootstrap include');
+  if (script.split('include "scripts/generated/GameABootstrap"').length !== 2) throw new Error('Expected one actual Map Runtime bootstrap include');
   script = script.replace('include "scripts/generated/GameABootstrap"', 'void MechanismStage(string stage);\ninclude "scripts/generated/GameABootstrap"');
   script = script.replace(/void InitMap\s*\(\s*\)\s*\{/, observer.galaxy + '\nvoid InitMap () {\n    TriggerAddEventTimeElapsed(TriggerCreate("MechanismRun"), 0.2, c_timeGame);');
   const core = path.join(mapPath, 'scripts/generated/GameACore.galaxy');

@@ -12,9 +12,11 @@ type Options = {
   databaseBuild?: string;
   receiptPath?: string;
   projectRevision?: number;
+  environmentRevision?: number;
+  databaseMessage?: string;
 };
 
-export function useAppliedChanges({ agentReady, databaseBuild, receiptPath, projectRevision }: Options) {
+export function useAppliedChanges({ agentReady, databaseBuild, receiptPath, projectRevision, environmentRevision, databaseMessage }: Options) {
   const { invoke } = useProjectBridge();
   const [items, setItems] = useState<AppliedChangeSummary[]>([]);
   const [error, setError] = useState("");
@@ -22,26 +24,28 @@ export function useAppliedChanges({ agentReady, databaseBuild, receiptPath, proj
   useEffect(() => {
     if (!agentReady || !isTauri()) {
       setItems([]);
-      setError("");
+      setError(isTauri() ? databaseMessage ?? "等待合作模式数据库就绪后读取改动记录。" : "");
       return;
     }
 
     let cancelled = false;
     setError("");
     invoke<AppliedChangeSummaryListResult>("change_summary_list")
-      .then((result) => {
-        if (!cancelled) setItems(result.items);
-      })
-      .catch((cause: unknown) => {
-        if (cancelled) return;
-        setItems([]);
-        setError(String(cause));
-      });
+        .then((result) => {
+          if (cancelled) return;
+          setItems(result.items);
+          setError("");
+        })
+        .catch((cause: unknown) => {
+          if (cancelled) return;
+          setItems([]);
+          setError(String(cause));
+        });
 
     return () => {
       cancelled = true;
     };
-  }, [agentReady, databaseBuild, receiptPath, projectRevision]);
+  }, [agentReady, databaseBuild, receiptPath, projectRevision, environmentRevision, databaseMessage, invoke]);
 
   const indicators = useMemo(
     () => buildChangeIndicatorSnapshot(items),

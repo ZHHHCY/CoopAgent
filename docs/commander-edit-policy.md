@@ -21,7 +21,7 @@
 
 ## 接口与验收
 
-启用 `change` 的配置可以一次提交显式修改，后台仍执行预检和原子应用；`dryRun`、计算器、完整计划及分开的 prepare/submit 是可选能力，不是固定调查顺序。见[能力接口说明](scalar-capabilities.md)。未启用 `change` 的默认配置仍使用现有 prepare/submit 完成同一事务。
+当前入口使用 `plan_prepare` 预检、`plan_submit` 提交同一事务，后台负责作用域校验与原子应用。计算器用于需要数值换算的请求，调查顺序由具体证据缺口决定。操作流程见 [Scalar Skill](../.opencode/skills/coop-scalar-change/SKILL.md)。
 
 成功依据是请求数值、适用条件、未改项与连续编辑结果。源码应用和 receipt 不等于游戏内验收；预检通过不等于已应用。失败时先看结构化诊断和当前工程，避免重复写入或遗漏已经完成的部分。
 

@@ -4,7 +4,9 @@
 
 ## 构建与输出
 
-双击仓库根目录的 `构建合作模式数据库.cmd`，或运行：
+首次使用时运行仓库根目录的 `setup.cmd`，它会选择 StarCraft II 安装目录、准备 CASC 数据并构建数据库。
+
+开发过程中需要基于已经准备好的提取结果单独重建数据库时，运行：
 
 ```bat
 scripts\casc-database.cmd build
@@ -19,7 +21,7 @@ manifest.json        SC2 build、来源哈希和依赖顺序
 build-report.json    统计、警告和雷诺/休伯利安验收结果
 ```
 
-构建采用临时目录，全部成功后才替换同 build 的旧数据库。Coop MCP 会按照 Game A 的 SC2 build 自动发现该目录；`COOPAGENT_CATALOG_ROOT` 仍可显式覆盖。
+构建采用临时目录，全部成功后才替换同 build 的旧数据库。Coop MCP 会按照地图运行层的 SC2 build 自动发现该目录；`COOPAGENT_CATALOG_ROOT` 仍可显式覆盖。
 
 当前构建规则记录 `catalogProjectionVersion=3` 和 `packageProfile=official-coop-expansions-v2`。旧数据库需要重新构建才能使用新规则；SQLite 结构版本仍为 2。合作模式使用扩展/战役数据包，不再把 LibertyMulti、SwarmMulti、VoidMulti 对战分支拼进同一基线。包顺序是内置的合作模式配置，`dependency_basis` 如实记录其来源，不冒称完整解析了官方 DocumentInfo 依赖图。
 

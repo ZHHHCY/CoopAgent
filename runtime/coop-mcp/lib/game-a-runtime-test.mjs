@@ -213,7 +213,7 @@ async function stageMap(paths, mapPath, runId) {
     await writeFile(paths.configPath, TEST_CONFIG, "utf8");
   } catch (error) {
     await rm(incoming, { recursive: true, force: true }).catch(() => {});
-    throw new GameARuntimeTestError("无法把 Game A 暂存到 StarCraft II\\Maps\\Test。", {
+    throw new GameARuntimeTestError("无法把地图运行层暂存到 StarCraft II\\Maps\\Test。", {
       source,
       target: paths.stagedMapPath,
       cause: error instanceof Error ? error.message : String(error),

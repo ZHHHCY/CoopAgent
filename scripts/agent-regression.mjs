@@ -70,7 +70,7 @@ async function initialize({ blind = false } = {}) {
   await save(path.join(parent, "fixture.json"), { version: 1, root, source, databaseFile, catalogRoot,
     originalCoreHash, initialCoreHash: await treeHash(corePath(root)), createdAt: new Date().toISOString(),
     isolation: blind ? { mode: 'blind', priorPlansCopied: false, referencesCopied: false, externalDirectory: 'deny', gitBoundary: true } : { mode: 'current-project' } });
-  assert.equal(await treeHash(corePath(source)), originalCoreHash, "Original Game A changed during fixture setup");
+  assert.equal(await treeHash(corePath(source)), originalCoreHash, "Original Map Runtime changed during fixture setup");
   console.log(JSON.stringify({ root, fixture: path.join(parent, "fixture.json") }));
 }
 

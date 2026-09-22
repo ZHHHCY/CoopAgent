@@ -9,17 +9,13 @@
 - `entity.get` 字段列表返回 offset/nextOffset；按数值顺序排列数组下标。full 不表示取消分页，需读取后续页或缩小字段前缀。
 
 
-PatchPlan 是 CoopAgent 对 Game A 执行修改时使用的机器可读清单。它描述“改哪里、原值应是什么、改成什么”，而不描述 Agent 的推理过程。
+PatchPlan 是 CoopAgent 对地图运行层执行修改时使用的机器可读清单。它描述“改哪里、原值应是什么、改成什么”，而不描述 Agent 的推理过程。
 
 当前推荐格式是 v2，其 JSON Schema 是 [`patch-plan-v2.schema.json`](./schemas/patch-plan-v2.schema.json)。v1 的 [`patch-plan.schema.json`](./schemas/patch-plan.schema.json) 已冻结并继续兼容。Schema 与本文冲突时，以对应版本的 Schema 为准。
 
-本文定义执行格式，不规定调查顺序。默认配置使用 plan_prepare / plan_submit；启用 change 的配置可以一次提交，由后端完成相同的预检与应用。自主配置的当前说明见 [Scalar 能力接口](scalar-capabilities.md)，计算器和单独预演按需使用。下文旧完整创作工具与示例仅作格式兼容参考，不是数值任务必须经过的工作流。一个宿主任务只选定一份最终计划；同次请求的全部数值和必要配套必须合在该计划中，不能分成多份依次提交。
+本文定义执行格式，不规定调查顺序。当前入口使用 `plan_prepare` / `plan_submit`，由后端预检并原子应用；操作流程见 [Scalar Skill](../.opencode/skills/coop-scalar-change/SKILL.md)。下文旧完整创作工具与示例仅作格式兼容参考。每轮交付选定一份最终计划，包含本轮目标及使其正确生效所需的全部配套；独立遗漏如实记录，可在用户反馈后的下一轮继续处理。
 
-内部完整创作调用方仍可用 [`coop_patch_plan_write(privateUnit)`](private-unit-draft.md) 辅助生成显式 v2 草稿；它不在当前数值 Agent 工具集中，也不改变本格式、执行器语义或最终校验。
-
-v1 可执行示例见 [`raynor-hyperion-catalog.patch-plan.json`](./examples/raynor-hyperion-catalog.patch-plan.json)，v2 结构化示例见 [`elite-marine.patch-plan.json`](./examples/elite-marine.patch-plan.json)，指挥官专属数值与单位克隆示例见 [`commander-tools.patch-plan.json`](./examples/commander-tools.patch-plan.json)。
-
-制作或修改合作英雄时，先阅读 [`hero-authoring-guide.md`](./hero-authoring-guide.md)，再使用 [`coop-hero-design.template.md`](./templates/coop-hero-design.template.md) 和 [`coop-hero.patch-plan.template.jsonc`](./templates/coop-hero.patch-plan.template.jsonc)。
+v1 可执行示例见 [`raynor-hyperion-catalog.patch-plan.json`](./examples/raynor-hyperion-catalog.patch-plan.json)，v2 结构化示例见 [`elite-marine.patch-plan.json`](./examples/elite-marine.patch-plan.json)。
 
 ## 1. 边界
 
@@ -73,7 +69,7 @@ PatchPlan v1/v2 都只写入 `game-a/core/GameA.SC2Mod`，其 `target` 固定为
 | `userSummary.text` | 一句话描述整份计划带来的用户可见结果；新计划必填，历史计划通过独立摘要索引兼容。 |
 | `target` | 固定为 `game-a.core`。 |
 | `compatibility.sc2DataBuild` | 生成计划时所依据的 SC2 数据构建号。 |
-| `compatibility.runtimeContract` | Game A 运行契约版本。 |
+| `compatibility.runtimeContract` | 地图运行层运行契约版本。 |
 | `scope` | v2 可选；新计划应明确声明修改只属于某个指挥官，还是有意全局生效。旧计划省略时继续兼容。 |
 | `isolation` | v2 可选；与 `scope` 配套记录实际隔离策略。声明其中任一字段时必须同时声明另一个。 |
 | `dependsOn` | v2 可选；必须已经应用并拥有 receipt 的前置计划。 |
@@ -275,13 +271,13 @@ PatchPlan v1/v2 都只写入 `game-a/core/GameA.SC2Mod`，其 `target` 固定为
 
 `expect` 是可选的前置值：
 
-- 有 `expect` 时，执行器先从“官方数据库 + 当前 Game A 核心覆盖 + 本计划此前操作”解析当前有效值。
+- 有 `expect` 时，执行器先从“官方数据库 + 当前地图运行层核心覆盖 + 本计划此前操作”解析当前有效值。
 - 当前值不同且也不等于目标值时，整份计划失败。
 - 当前值已经等于目标值时，该操作视为已完成，因此重复执行同一计划不会重复追加内容。
 - `expect: null` 表示该字段或本地化键原本不存在。
 - 没有 `expect` 时仍执行，但安全性较低，执行记录必须标记为未校验写入。
 
-所有路径使用 `/`，必须相对于 Game A 核心根目录，禁止绝对路径、`..` 和反斜杠。
+所有路径使用 `/`，必须相对于地图运行层核心根目录，禁止绝对路径、`..` 和反斜杠。
 
 ## 4. 操作
 
@@ -452,7 +448,7 @@ Catalog 路径采用编辑器式字段路径：
 ### 4.10 `commander.stat.set`（v2）
 
 为一个指挥官设置玩家专属的数值，不直接覆盖共享的官方 Catalog 对象。执行器生成稳定命名的隐藏
-`CUpgrade`，在 Game A 确认指挥官选择后只授予匹配的指挥官玩家。
+`CUpgrade`，在地图运行层确认指挥官选择后只授予匹配的指挥官玩家。
 
 携带 `prestigeUpgrade` 时，后端从已经提交的威望选择读取
 `PlayerPrestige.PrimaryUpgrade` 并匹配该 ID，不等待官方威望 Upgrade 等级变为 1。
@@ -519,7 +515,7 @@ Catalog 路径采用编辑器式字段路径：
 2. 解析全部路径、Catalog 对象、字段与前置值；这一阶段不写文件。
 3. 在临时工作树中按 `operations` 顺序执行。
 4. 生成或更新 Catalog XML、本地化文件、Galaxy 模块和 `GameA.Core.json`。
-5. 运行 Game A 结构验证和构建检查。
+5. 运行地图运行层结构验证和构建检查。
 6. 全部成功后一次性替换核心源；任一步失败都不得留下部分写入。
 
 一份计划中的后续操作看到前面操作产生的值。多个操作写同一目标时，除非后一个操作的 `expect` 明确匹配前一个结果，否则视为冲突。
@@ -533,7 +529,7 @@ v2 在计划之间增加两层保护：
   同一套目标生成与父子字段冲突规则。
 - 同一计划重复写入同一标量目标时，后一项必须用 `expect` 明确承接前一项的结果。
 
-Game A 构建器还生成 `GameA_GeneratedConfigureCommander()`。它在准备页面确定指挥官之后调用各模块
+地图运行层构建器还生成 `GameA_GeneratedConfigureCommander()`。它在准备页面确定指挥官之后调用各模块
 登记的 configure 回调，使 `commander.stat.set` 和 `commander.unit.clone` 的隐藏 Upgrade 不会授予敌方玩家。
 
 ### 命令行入口
@@ -556,7 +552,7 @@ scripts\patch-plan.cmd path\to\change.patch-plan.json
 scripts\patch-plan.cmd path\to\change.patch-plan.json --catalog-root path\to\merged\GameData
 ```
 
-也可以用 `COOPAGENT_CATALOG_ROOT` 环境变量设置默认目录。对象已经存在于 Game A 核心覆盖中时不需要重复提供数据库。`--check` 和正式应用都会在临时副本中运行 Game A 结构验证及构建检查；只有正式应用全部通过后才会替换核心源。
+也可以用 `COOPAGENT_CATALOG_ROOT` 环境变量设置默认目录。对象已经存在于地图运行层核心覆盖中时不需要重复提供数据库。`--check` 和正式应用都会在临时副本中运行地图运行层结构验证及构建检查；只有正式应用全部通过后才会替换核心源。
 
 ## 6. 保存与生成结果
 
@@ -573,6 +569,6 @@ game-a/patches/<id>.patch-plan.json
 game-a/patches/<id>.receipt.json
 ```
 
-PatchPlan 是修改记录，receipt 保存计划哈希、每项操作状态、全部结构化目标、修改文件前后 SHA-256 以及整个核心树的前后 SHA-256。`patch_plan_check` 还会从同一份计划机械生成 `review`，用于显示可读修改、前置值、目标值和静态诊断；`review` 不替代 Receipt，也不代表完成了游戏运行时测试。生成后的 XML、Galaxy 和本地化文本是 Game A 可运行源码，这三部分都进入 Git。`game-a/build` 始终不进入 Git。
+PatchPlan 是修改记录，receipt 保存计划哈希、每项操作状态、全部结构化目标、修改文件前后 SHA-256 以及整个核心树的前后 SHA-256。`patch_plan_check` 还会从同一份计划机械生成 `review`，用于显示可读修改、前置值、目标值和静态诊断；`review` 不替代 Receipt，也不代表完成了游戏运行时测试。生成后的 XML、Galaxy 和本地化文本是地图运行层可运行源码，这三部分都进入 Git。`game-a/build` 始终不进入 Git。
 
 当前休伯利安 Galaxy 文件是在 PatchPlan 执行器出现前手工生成的验收样例。执行器已经可以确认其 Catalog 与本地化覆盖处于目标状态；完整 Galaxy 等价计划仍应在后续回归中生成，但不因此改变已冻结的运行层接口。

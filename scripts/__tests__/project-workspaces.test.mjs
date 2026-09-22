@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto';
 import { mkdtemp, readFile, writeFile, mkdir, rm, readdir, stat, rename, cp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { createProject, openProject, renameProject, migrateProject, verifyTemplate } from '../lib/project-workspaces.mjs';
+import { createProject, openProject, openOrMigrateProject, renameProject, migrateProject, verifyTemplate } from '../lib/project-workspaces.mjs';
 import { APP_ROOT } from '../lib/project-context.mjs';
 import { treeHash } from '../lib/patch-plan-executor.mjs';
 import { createPlanSubmissionService } from '../lib/plan-submission.mjs';
@@ -12,7 +12,7 @@ import { createAgentTaskStore } from '../lib/agent-task.mjs';
 import { buildCascDatabase } from '../lib/casc-database-builder.mjs';
 
 const core = root => path.join(root, 'game-a/core/GameA.SC2Mod');
-const templateRoot = path.join(APP_ROOT, 'game-a/templates/coop-default-v1/6');
+const templateRoot = path.join(APP_ROOT, 'game-a/templates/coop-default-v1/7');
 async function fixture(t) {
   const root = await mkdtemp(path.join(tmpdir(), 'coop-projects-'));
   t.after(() => rm(root, { recursive: true, force: true }));
@@ -108,14 +108,18 @@ test('explicit migration updates the template binding without replacing project 
   const previous=JSON.parse(await readFile(path.join(previousRoot,'template.json')));
   await cp(path.join(previousRoot,'game-a/core/GameA.SC2Mod'),core(project.workspaceRoot),{recursive:true,force:true});
   const marker=path.join(core(project.workspaceRoot),'Base.SC2Data/GameData/UnitData.xml');
+  const customizedLocalization=path.join(core(project.workspaceRoot),'zhCN.SC2Data/LocalizedData/GameStrings.txt');
   await writeFile(marker,'<Catalog><CUnit id="Kept"/></Catalog>');
+  await writeFile(customizedLocalization,'GameA/Preparation/DialogTitle=自定义标题\n');
   manifest.templateVersion=previous.templateVersion;
   manifest.templateHash=(await verifyTemplate(previousRoot, APP_ROOT).catch(()=>null))?.templateHash
     ?? createHash('sha256').update(JSON.stringify({files:previous.files,sharedInputs:previous.sharedInputs ?? {}})).digest('hex');
   await writeFile(manifestPath,`${JSON.stringify(manifest,null,2)}\n`);
   const migrated=await migrateProject(project.workspaceRoot);
-  assert.equal(migrated.templateVersion,'6');
+  assert.equal(migrated.templateVersion,'7');
   assert.equal(await readFile(marker,'utf8'),'<Catalog><CUnit id="Kept"/></Catalog>');
+  assert.equal(await readFile(customizedLocalization,'utf8'),'GameA/Preparation/DialogTitle=自定义标题\n');
+  assert.match(await readFile(path.join(core(project.workspaceRoot),'enUS.SC2Data/LocalizedData/GameStrings.txt'),'utf8'),/CoopAgent Map Runtime/);
   assert.match(await readFile(path.join(core(project.workspaceRoot),'Base.SC2Data/Generated/PreparationOptions.galaxy'),'utf8'),/GameA_PreparationOptionsApplyAfterMissionInit/);
   assert.match(await readFile(path.join(core(project.workspaceRoot),'Base.SC2Data/Generated/PreparationOptions.galaxy'),'utf8'),/PlayerSetDifficulty\(4, gameA_selectedDifficulty\)/);
   const migratedCore=JSON.parse(await readFile(path.join(core(project.workspaceRoot),'GameA.Core.json')));
@@ -123,4 +127,24 @@ test('explicit migration updates the template binding without replacing project 
     'GameA_PreparationOptionsApplyAfterMissionInit');
   assert.equal(migratedCore.galaxy.modules.find(module=>module.path.endsWith('/TestMode.galaxy')).postMissionStart,
     'GameA_TestModeApplyStartingEconomy');
+});
+test('desktop open migrates an older project before current shared-host verification', async t=>{
+  const root=await mkdtemp(path.join(tmpdir(),'coop-project-auto-migrate-'));t.after(()=>rm(root,{recursive:true,force:true}));
+  const project=await createProject({directory:path.join(root,'project'),name:'自动迁移'});
+  const manifestPath=path.join(project.workspaceRoot,'coop-project.json');
+  const manifest=JSON.parse(await readFile(manifestPath));
+  const previousRoot=path.join(APP_ROOT,'game-a/templates/coop-default-v1/6');
+  const previous=JSON.parse(await readFile(path.join(previousRoot,'template.json')));
+  await cp(path.join(previousRoot,'game-a/core/GameA.SC2Mod'),core(project.workspaceRoot),{recursive:true,force:true});
+  const marker=path.join(core(project.workspaceRoot),'Base.SC2Data/GameData/UnitData.xml');
+  await writeFile(marker,'<Catalog><CUnit id="KeptDuringAutoMigration"/></Catalog>');
+  manifest.templateVersion=previous.templateVersion;
+  manifest.templateHash=createHash('sha256').update(JSON.stringify({files:previous.files,sharedInputs:previous.sharedInputs ?? {}})).digest('hex');
+  await writeFile(manifestPath,`${JSON.stringify(manifest,null,2)}\n`);
+
+  await assert.rejects(openProject(project.workspaceRoot),/模板共享宿主已改变，需显式迁移/);
+  const opened=await openOrMigrateProject(project.workspaceRoot);
+  assert.equal(opened.templateVersion,'7');
+  assert.equal(await readFile(marker,'utf8'),'<Catalog><CUnit id="KeptDuringAutoMigration"/></Catalog>');
+  assert.match(await readFile(path.join(core(project.workspaceRoot),'enUS.SC2Data/LocalizedData/GameStrings.txt'),'utf8'),/CoopAgent Map Runtime/);
 });

@@ -232,6 +232,6 @@ try {
     database.close();
   }
 } catch (error) {
-  console.error(error instanceof Error ? error.message : String(error));
+  console.error(JSON.stringify({ message: error instanceof Error ? error.message : String(error), details: error.details ?? null }));
   process.exit(1);
 }

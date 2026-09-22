@@ -42,7 +42,7 @@ Scalar 是用户需求范围，不是底层操作白名单。生命、伤害、�
 - Harness 负责预算、暂停恢复和交付，不替代游戏语义判断。
 - 执行器负责 Schema、真实前置条件、作用域、确定性、原子提交和 Receipt。
 
-PatchPlan 格式见 [PatchPlan v2](patch-plan.md)，普通自主修改的输入见 [Scalar 能力接口](scalar-capabilities.md)，具体指挥官隔离规则见 [指挥官修改策略](commander-edit-policy.md)。
+PatchPlan 格式见 [PatchPlan v2](patch-plan.md)，数值修改流程见 [Scalar Skill](../.opencode/skills/coop-scalar-change/SKILL.md)，具体指挥官隔离规则见 [指挥官修改策略](commander-edit-policy.md)。
 
 ## 当前能力边界
 
@@ -65,6 +65,6 @@ pnpm test:scalar
 pnpm build
 ```
 
-涉及项目、UI、Rust 或 Game A 时补对应现有检查。代码测试、构建、真实 Agent 和游戏效果分别报告。阶段性真实模型验收方法见 [Scalar 阶段验收](scalar-stage-acceptance.md)，命令行运行方式见 [Agent 测试接口](agent-test-interface.md)。
+涉及项目、UI、Rust 或地图运行层时补对应现有检查。代码测试、构建、真实 Agent 和游戏效果分别报告。命令行运行方式见 [Agent 测试接口](agent-test-interface.md)。
 
 当前已知边界包括：弱模型可能忽略已有 no-change 证据，多字段反馈可能部分遗漏，运行时脚本输出不一定能定位到可编辑参数，参数入口尚未覆盖全部威望条件求值，UI 与游戏效果也没有全量验收。这些是如实保留的能力边界，不自动触发新一轮工具、预算或对象专用规则建设。

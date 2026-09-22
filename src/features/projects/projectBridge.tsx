@@ -1,12 +1,12 @@
 import { createContext, useContext, useMemo } from 'react';
 import { invoke as tauriInvoke } from '@tauri-apps/api/core';
 export type Project = { projectId: string; name: string; workspaceRoot: string; contextGeneration: number; legacy?: boolean; openError?: string };
-export type Projects = { active: Project; recent: Project[]; defaultDirectory: string };
+export type Projects = { active: Project | null; recent: Project[]; defaultDirectory: string; recoveryNotice?: string };
 export const ProjectContext = createContext<Project | null>(null);
 let current: Project | null = null;
 let preferences: Record<string, string> = {};
 let writes = Promise.resolve();
-export function activateProject(project: Project, ui: Record<string,string>) { current = project; preferences = ui; }
+export function activateProject(project: Project | null, ui: Record<string,string>) { current = project; preferences = ui; }
 export function useProjectBridge() {
   const project = useContext(ProjectContext);
   return useMemo(() => {

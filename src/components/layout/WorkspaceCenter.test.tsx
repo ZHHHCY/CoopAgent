@@ -1,76 +1,66 @@
-import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import type { AgentController } from "../../features/agent/useAgentController";
-import type { Sc2EnvironmentController } from "../../features/environment/useSc2Environment";
-import { WorkspaceCenter } from "./WorkspaceCenter";
-import type { CommanderInspectionSelection } from "../commander/types";
+import { act, type ComponentProps } from 'react';
+import { createRoot } from 'react-dom/client';
+import { expect, test, vi } from 'vitest';
+import { WorkspaceCenter } from './WorkspaceCenter';
 
-vi.mock("../chat/ChatPanel", () => ({
-  ChatPanel: ({ active }: { active: boolean }) => <div data-active={String(active)}>对话内容</div>,
-}));
-vi.mock("../commander/CommanderWorkspace", () => ({
-  CommanderWorkspace: ({ onInspectSelection }: {
-    onInspectSelection: (selection: CommanderInspectionSelection) => void;
-  }) => <button onClick={() => onInspectSelection({ kind: "unit", unit: {} } as CommanderInspectionSelection)}>
-    数据库内容
-  </button>,
-}));
-vi.mock("../commander/CommanderDetailInspector", () => ({
-  CommanderDetailInspector: ({ selection }: { selection: CommanderInspectionSelection }) => (
-    selection ? <div data-testid="database-detail">单位详细信息</div> : null
-  ),
+const { invoke, bridge } = vi.hoisted(() => {
+  const invoke = vi.fn();
+  return { invoke, bridge: { invoke, storage: { getItem: () => null, setItem: vi.fn() } } };
+});
+vi.mock('@tauri-apps/api/core', () => ({ isTauri: () => true }));
+vi.mock('../../features/projects/projectBridge', () => ({ useProjectBridge: () => bridge }));
+vi.mock('../chat/ChatPanel', () => ({ ChatPanel: () => <textarea aria-label="聊天草稿" /> }));
+vi.mock('../commander/CommanderDetailInspector', () => ({ CommanderDetailInspector: () => null }));
+vi.mock('../commander/CommanderProgression', () => ({ CommanderProgression: () => null }));
+vi.mock('../commander/CommanderRosterPanel', () => ({ CommanderRosterPanel: () => null }));
+vi.mock('../commander/CommanderPicker', () => ({
+  CommanderPicker: ({ onSelect, selectedCommanderId }: { onSelect: (id: string) => void; selectedCommanderId: string | null }) =>
+    <button data-testid="commander" onClick={() => onSelect('ExampleCommander')}>{selectedCommanderId ?? '选择指挥官'}</button>,
 }));
 
-let root: Root;
-let container: HTMLDivElement;
-
-beforeEach(async () => {
+test('database loads on first visit, retains selection and chat draft, and refreshes applied changes', async () => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
-  container = document.createElement("div");
-  document.body.append(container);
-  root = createRoot(container);
-  await act(async () => root.render(
-    <WorkspaceCenter
-      agent={{ projectRevision: 0 } as AgentController}
-      changeIndicators={{} as never}
-      environment={{ agentReady: true } as Sc2EnvironmentController}
-    />,
-  ));
-});
+  invoke.mockReset();
+  invoke.mockImplementation(async (command: string) => command === 'commander_list'
+    ? { items: [{ id: 'ExampleCommander' }] } : { id: 'ExampleCommander' });
+  const div = document.createElement('div');
+  document.body.append(div);
+  const root = createRoot(div);
+  const props = {
+    agent: { projectRevision: 0 }, environment: { agentReady: true, status: { rootPath: 'game-root' } }, changeIndicators: { commanders: [] },
+  } as unknown as ComponentProps<typeof WorkspaceCenter>;
+  const click = async (selector: string) => act(async () => div.querySelector<HTMLButtonElement>(selector)!.click());
+  try {
+    await act(async () => root.render(<WorkspaceCenter {...props} />));
+    const draft = div.querySelector('textarea')!;
+    draft.value = '尚未发送';
+    expect(invoke).not.toHaveBeenCalled();
+    props.agent = { ...props.agent, projectRevision: 1 };
+    await act(async () => root.render(<WorkspaceCenter {...props} />));
+    expect(invoke).not.toHaveBeenCalled();
 
-afterEach(async () => {
-  await act(async () => root.unmount());
-  container.remove();
-});
+    await click('#workspace-database-tab');
+    expect(invoke.mock.calls.map(call => call[0])).toEqual(['commander_list']);
+    await click('[data-testid="commander"]');
+    expect(invoke).toHaveBeenLastCalledWith('commander_get', { commanderId: 'ExampleCommander' });
+    await click('#workspace-agent-tab');
+    expect(div.querySelector('textarea')).toBe(draft);
+    expect(draft.value).toBe('尚未发送');
+    await click('#workspace-database-tab');
+    expect(invoke).toHaveBeenCalledTimes(2);
+    expect(div.querySelector('[data-testid="commander"]')?.textContent).toBe('ExampleCommander');
 
-test("the center workspace switches between full chat and database panels", async () => {
-  const [agentTab, databaseTab] = [...container.querySelectorAll<HTMLButtonElement>("[role=tab]")];
-  const agentPanel = container.querySelector<HTMLElement>("#workspace-agent-panel")!;
-  const databasePanel = container.querySelector<HTMLElement>("#workspace-database-panel")!;
-
-  expect(agentTab.ariaSelected).toBe("true");
-  expect(agentPanel.hidden).toBe(false);
-  expect(databasePanel.hidden).toBe(true);
-  expect(agentPanel.firstElementChild?.getAttribute("data-active")).toBe("true");
-
-  await act(async () => databaseTab.click());
-  expect(databaseTab.ariaSelected).toBe("true");
-  expect(agentPanel.hidden).toBe(true);
-  expect(databasePanel.hidden).toBe(false);
-  expect(agentPanel.firstElementChild?.getAttribute("data-active")).toBe("false");
-
-  expect(databasePanel.querySelector(".database-workspace-detail")).not.toBeNull();
-  const splitter = databasePanel.querySelector<HTMLButtonElement>('[role="separator"]')!;
-  expect(splitter.getAttribute("aria-valuenow")).toBe("55");
-  await act(async () => splitter.dispatchEvent(new KeyboardEvent("keydown", {
-    bubbles: true,
-    key: "ArrowDown",
-  })));
-  expect(splitter.getAttribute("aria-valuenow")).toBe("58");
-  expect(databasePanel.querySelector<HTMLElement>(".database-workspace")?.style
-    .getPropertyValue("--database-upper")).toBe("58%");
-  expect(container.textContent).not.toContain("单位详细信息");
-  await act(async () => databasePanel.querySelector<HTMLButtonElement>(".database-workspace-browser button")!.click());
-  expect(databasePanel.querySelector('[data-testid="database-detail"]')?.textContent).toBe("单位详细信息");
+    props.agent = { ...props.agent, projectRevision: 2 };
+    await act(async () => root.render(<WorkspaceCenter {...props} />));
+    expect(invoke.mock.calls.map(call => call[0])).toEqual(['commander_list', 'commander_get', 'commander_list', 'commander_get']);
+    await act(async () => root.render(<WorkspaceCenter key="new-project" {...props} />));
+    expect(div.querySelector('[data-testid="commander"]')).toBeNull();
+    expect(invoke).toHaveBeenCalledTimes(4);
+    await click('#workspace-database-tab');
+    expect(invoke).toHaveBeenCalledTimes(5);
+    expect(div.querySelector('[data-testid="commander"]')?.textContent).toBe('选择指挥官');
+  } finally {
+    await act(async () => root.unmount());
+    div.remove();
+  }
 });

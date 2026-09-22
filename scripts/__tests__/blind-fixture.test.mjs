@@ -5,13 +5,12 @@ import { blindFixtureFile, blindModelConfig, blindTestEnvironment } from '../lib
 test('blind fixture excludes answers, historical plans, traces and test implementations', () => {
   for (const file of ['docs/test-assets/reference/comm-001-wraith.mjs', 'docs/test-assets/runs/old.md',
     'scripts/manual-wraith-reference.mjs', 'scripts/__tests__/manual-wraith-reference.test.mjs',
-    'scripts/scalar-parameter-regression.mjs', 'scripts/scalar-parameter-regression-report.mjs',
+    'scripts/agent-regression.mjs',
     'game-a/patches/old.patch-plan.json', 'game-a/patches/old.receipt.json', 'game-a/drafts/old.json',
     'game-a/runtime/agent-tasks.sqlite', 'runtime/coop-mcp/__tests__/test.mjs', 'docs/old-plan.md']) {
     assert.equal(blindFixtureFile(file), false, file);
   }
   for (const file of ['AGENTS.md', 'docs/patch-plan.md', 'docs/commander-edit-policy.md',
-    'docs/private-unit-draft.md',
     'runtime/coop-mcp/lib/private-unit-draft.mjs',
     'scripts/lib/commander-edit-policy.mjs', 'docs/schemas/patch-plan-v2.schema.json',
     '.opencode/skills/coop-scalar-change/SKILL.md', 'docs/scalar-only.md', 'runtime/coop-mcp/lib/coop-search.mjs',

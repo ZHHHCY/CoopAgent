@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$StarCraftRoot,
     [switch]$NonInteractive
@@ -15,7 +15,7 @@ elseif ($NonInteractive) {
         $root = Resolve-CoopSc2Root $env:COOPAGENT_SC2_ROOT
     } else {
         $saved = Get-CoopSc2SavedRoot
-        if (-not $saved) { throw 'No valid saved installation. Specify -StarCraftRoot <folder-or-exe>.' }
+        if (-not $saved) { throw '没有有效的已保存安装目录，请指定 -StarCraftRoot <文件夹或 exe>。' }
         $root = Resolve-CoopSc2Root $saved
     }
 }
@@ -33,14 +33,14 @@ else {
     while (-not $root) {
         $selection = Show-CoopSc2FolderPicker $initial
         if ([string]::IsNullOrWhiteSpace($selection)) {
-            throw 'Setup cancelled. Installation configuration was not changed.'
+            throw '已取消环境准备，安装目录配置没有改变。'
         }
         try { $root = Resolve-CoopSc2Root $selection }
         catch {
             Add-Type -AssemblyName System.Windows.Forms
             [System.Windows.Forms.MessageBox]::Show(
                 $_.Exception.Message,
-                'CoopAgent - Invalid StarCraft II folder',
+                'CoopAgent - StarCraft II 目录无效',
                 [System.Windows.Forms.MessageBoxButtons]::OK,
                 [System.Windows.Forms.MessageBoxIcon]::Error
             ) | Out-Null
@@ -50,5 +50,5 @@ else {
 }
 Save-CoopSc2Root $root
 Write-Host "StarCraft II: $root"
-Write-Host "Saved for setup and desktop: $(Get-CoopSc2ConfigPath)"
+Write-Host "配置已供安装脚本和桌面端共用：$(Get-CoopSc2ConfigPath)"
 Write-Output $root

@@ -1,6 +1,6 @@
 import { workspaceRoot } from '../../../scripts/lib/project-context.mjs';
 import { existsSync, readFileSync, readdirSync } from "node:fs";
-import os from "node:os";
+import { resolveCoopDatabase, requireCoopDatabase } from '../../../scripts/lib/database-location.mjs';
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { DatabaseSync } from "node:sqlite";
@@ -17,7 +17,6 @@ import { canonicalEditPath } from "../../../scripts/lib/catalog-edit-contract.mj
 import { masteryPointSelector } from '../../../scripts/lib/mastery-point-editor.mjs';
 import { attachEngineCatalog } from "../../../scripts/lib/engine-catalog-store.mjs";
 import { readUpgradeOperation } from './upgrade-operation.mjs';
-import { isolationWorkflow } from './authoring-workflow.mjs';
 import { projectUnitArrayFields } from "./unit-arrays.mjs";
 import { readGameAConsistently } from "../../../scripts/lib/game-a-transaction.mjs";
 import { extractGalaxySymbols, GALAXY_SYMBOL_VERSION } from "../../../scripts/lib/galaxy-symbols.mjs";
@@ -1484,46 +1483,9 @@ export function createCoopSearch(options = {}) {
   const commanderAliases = loadCommanderAliases(
     path.resolve(options.commanderAliasesFile ?? DEFAULT_COMMANDER_ALIASES_FILE),
   );
-  const localAppDataDirectory =
-    options.localAppDataDirectory ??
-    process.env.LOCALAPPDATA ??
-    process.env.XDG_DATA_HOME ??
-    (process.platform === "win32"
-      ? path.join(os.homedir(), "AppData", "Local")
-      : path.join(os.homedir(), ".local", "share"));
-
   function locateDatabase() {
-    const baseline = readJson(path.join(repoRoot, "game-a", "runtime-baseline.json"));
-    const dataBuild = baseline.sc2.dataBuild;
-    let databaseFile;
-    let source;
-    if (options.databaseFile) {
-      databaseFile = path.resolve(options.databaseFile);
-      source = "configured-database";
-    } else if (process.env.COOPAGENT_DATABASE) {
-      databaseFile = path.resolve(process.env.COOPAGENT_DATABASE);
-      source = "environment-database";
-    } else if (process.env.COOPAGENT_CATALOG_ROOT) {
-      const catalogRoot = path.resolve(process.env.COOPAGENT_CATALOG_ROOT);
-      databaseFile = path.join(path.dirname(path.dirname(catalogRoot)), "coop.sqlite");
-      source = "environment-catalog";
-    } else {
-      databaseFile = path.join(
-        localAppDataDirectory,
-        "CoopAgent",
-        "database",
-        dataBuild,
-        "coop.sqlite",
-      );
-      source = "local-database";
-    }
-    if (!existsSync(databaseFile)) {
-      throw new CoopSearchError("The co-op database has not been built for the current Game A SC2 build.", {
-        expectedBuild: dataBuild,
-        expectedPath: databaseFile,
-      });
-    }
-    return { dataBuild, databaseFile, source };
+    try { return requireCoopDatabase(resolveCoopDatabase({ ...options, repoRoot })); }
+    catch (error) { throw new CoopSearchError(error.message, error.details); }
   }
 
   let activeProjection = null;
@@ -1540,7 +1502,7 @@ export function createCoopSearch(options = {}) {
       try {
         database.exec('PRAGMA temp_store=MEMORY; BEGIN');
         const metadata=Object.fromEntries(database.prepare('SELECT key,value FROM meta').all().map(row=>[row.key,row.value]));
-        if(metadata.sc2Build!==location.dataBuild)throw new CoopSearchError('The co-op database build does not match Game A.');
+        if(metadata.sc2Build!==location.dataBuild)throw new CoopSearchError('The co-op database build does not match Map Runtime.');
         metadata.engineCatalog=measure('engine-baseline',()=>attachEngineCatalog(database).status);
         const projection=measure('project-projection',()=>attachGameAProjection(database,{repoRoot,commanderId:input.commanderId,prestigeUpgrade:input.prestigeUpgrade}));
         const dataVersion=Number(database.prepare('PRAGMA data_version').get().data_version);
@@ -1596,7 +1558,7 @@ export function createCoopSearch(options = {}) {
         database.prepare("SELECT key, value FROM meta").all().map((row) => [row.key, row.value]),
       );
       if (metadata.sc2Build !== location.dataBuild) {
-        throw new CoopSearchError("The co-op database build does not match Game A.", {
+        throw new CoopSearchError("The co-op database build does not match Map Runtime.", {
           expectedBuild: location.dataBuild,
           databaseBuild: metadata.sc2Build ?? null,
           databaseFile: location.databaseFile,
@@ -2610,7 +2572,7 @@ export function createCoopSearch(options = {}) {
     const unitArrays = unitArrayResult?.unitArrays ?? null;
     // Prebuilt knowledge is an ID-keyed part of the existing entity read, not
     // a second name resolver. Keep its official baseline separate from the
-    // current Game A fields and never expand an exact scalar query implicitly.
+    // current Map Runtime fields and never expand an exact scalar query implicitly.
     const wantFacts = !['fields','parameters'].includes(input.topic) && ['commander','unit','abil','weapon','behavior','effect','upgrade'].includes(catalog.toLowerCase()) && input.commanderId && !hasPath
       && input.fieldPrefix === undefined && input.include === undefined;
     const officialFacts = wantFacts ? withDatabase(db => ({ facts:readCoopEntityFacts(db, {
@@ -3425,7 +3387,6 @@ export function createCoopSearch(options = {}) {
           left.distance - right.distance || left.catalog.localeCompare(right.catalog) || left.objectId.localeCompare(right.objectId)),
         edges,
         ...(requestedIsolation ? { isolation: requestedIsolation } : {}),
-        ...(requestedIsolation ? { authoringWorkflow: isolationWorkflow(repoRoot, requestedIsolation) } : {}),
         warnings: [
           "Catalog references cannot prove that enemy compositions or map Galaxy scripts do not use this object.",
           ...(targetPath ? ["The reference graph is object-level; the requested field path narrows the intended write, not the graph edges."] : []),

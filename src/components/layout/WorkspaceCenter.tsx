@@ -31,6 +31,7 @@ function clampDatabaseSplit(value: number) {
 
 export function WorkspaceCenter({ agent, changeIndicators, environment }: Props) {
   const [view, setView] = useState<WorkspaceView>("agent");
+  const [databaseOpened, setDatabaseOpened] = useState(false);
   const [inspection, setInspection] = useState<CommanderInspectionSelection>(null);
   const [databaseSplit, setDatabaseSplit] = useState(55);
   const databaseWorkspaceRef = useRef<HTMLDivElement>(null);
@@ -80,7 +81,10 @@ export function WorkspaceCenter({ agent, changeIndicators, environment }: Props)
           aria-selected={view === "database"}
           className={view === "database" ? "is-active" : ""}
           id="workspace-database-tab"
-          onClick={() => setView("database")}
+          onClick={() => {
+            setDatabaseOpened(true);
+            setView("database");
+          }}
           role="tab"
           type="button"
         >
@@ -112,13 +116,13 @@ export function WorkspaceCenter({ agent, changeIndicators, environment }: Props)
           style={{ "--database-upper": `${databaseSplit}%` } as CSSProperties}
         >
           <div className="database-workspace-browser">
-            <CommanderWorkspace
+            {databaseOpened && <CommanderWorkspace
               agentReady={environment.agentReady}
-              projectRevision={agent.projectRevision}
+              projectRevision={agent.projectRevision + (environment.revision ?? 0)}
               changeIndicators={changeIndicators}
               onInspectSelection={setInspection}
               sc2RootPath={environment.status?.rootPath}
-            />
+            />}
           </div>
           <button
             aria-label="调整数据库列表与对象详情的高度"

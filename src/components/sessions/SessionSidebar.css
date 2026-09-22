@@ -258,8 +258,7 @@
   background: rgba(239, 117, 111, 0.12);
 }
 
-.session-list-state,
-.session-sidebar-error {
+.session-list-state {
   margin: 8px 5px;
   font-size: 9px;
   line-height: 1.4;
@@ -267,8 +266,4 @@
 
 .session-list-state {
   color: #7897a5;
-}
-
-.session-sidebar-error {
-  color: #ef9b96;
 }

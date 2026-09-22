@@ -207,7 +207,7 @@ test('first candidate can select with unresolved compatibility while persisting 
   assert.equal(f.store.finish({ ...ctx, reason: 'completed' }).status, 'submitted');
 });
 
-test('five-minute phase checkpoints persist and block further calls without writing Game A', (t) => {
+test('five-minute phase checkpoints persist and block further calls without writing Map Runtime', (t) => {
   const f = fixture(t); const ctx = f.open();
   assert.equal(f.store.guard(ctx).deadline - 1000, 300_000);
   f.store.checkpoint({ ...ctx, ...point });

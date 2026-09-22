@@ -33,7 +33,7 @@ const REVIEWED_MECHANISMS = [
     discovery: [['Effect', 'RoyalGuardMengskTopbarRegenDummy']],
     build: 'B97579', function: 'libCOMI_gf_CM_Mengsk_GlobalCasterEnergyRegenCalculateRoyalGuard',
     role: 'royal-guard-extra-base-support-per-living-supply',
-    summary: 'Game A adds this base term per living Royal Guard supply, while retaining the official rank-weighted coefficient.',
+    summary: 'Map Runtime adds this base term per living Royal Guard supply, while retaining the official rank-weighted coefficient.',
     formula: 'support = masteryFactor * (officialCoefficient * supply * (1 + rank) + basePerSupply * supply)',
     condition: 'TerranMengsk commander level is at least 5; only living Royal Guard units owned by the player contribute.',
     preserves: ['official SupplyLevel rank term', 'mastery factor', 'trooper contribution', 'non-Mengsk players'],
@@ -145,7 +145,7 @@ export function createFieldUsageReader(db, { inspect, dependencies }) {
         ...(mechanism ? { mechanism } : {}),
         coverage: { officialExtractedSource: 'indexed', gameASource: 'not-indexed', complete: false,
           dynamicAccesses: dynamicCandidates.length,
-          note: 'Direct literal Catalog accesses in the official extracted source are indexed. Dynamic arguments and Game A project scripts are not proof of absence.' },
+          note: 'Direct literal Catalog accesses in the official extracted source are indexed. Dynamic arguments and Map Runtime project scripts are not proof of absence.' },
         validity: { sc2DataBuild: db.prepare("SELECT value FROM meta WHERE key='sc2Build'").get()?.value ?? null,
           parserVersion: FIELD_USAGE_INDEX_VERSION, evidenceKind: 'local-extracted-source' } };
     },
@@ -163,7 +163,7 @@ export function createFieldUsageReader(db, { inspect, dependencies }) {
           source: 'Base.SC2Data/Generated/RaynorResearchCost.galaxy',
           application: 'the host post-mission-startup callback, after the official Raynor formula',
           preserves: ['AffectedUnitArray research list', 'four resource slots', 'CeilingI rounding', 'unmodified c_playerAny base costs'] },
-        ...(parameter.edit.available ? {} : { gap: 'The Game A Raynor research-cost parameter is not available in this project.' }) };
+        ...(parameter.edit.available ? {} : { gap: 'The Map Runtime Raynor research-cost parameter is not available in this project.' }) };
     },
   };
 }

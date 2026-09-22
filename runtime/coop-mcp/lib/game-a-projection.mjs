@@ -29,7 +29,7 @@ function xml(source, file, root = null) {
   const document = new DOMParser({ onError: (level, message) => errors.push(`${level}: ${message}`) })
     .parseFromString(source, "application/xml");
   if (errors.length || !document?.documentElement || (root && document.documentElement.tagName !== root)) {
-    throw new Error(`Cannot project Game A XML ${file}: ${errors.join("; ") || `expected ${root}`}`);
+    throw new Error(`Cannot project Map Runtime XML ${file}: ${errors.join("; ") || `expected ${root}`}`);
   }
   return document;
 }
@@ -50,7 +50,7 @@ function applyFields(target, flattened, origin) {
   }
 }
 
-/** Connection-local, in-memory overlay. Caller holds a Game A shared lock for
+/** Connection-local, in-memory overlay. Caller holds a Map Runtime shared lock for
  * its entire synchronous query. The main SQLite database must be read-only.
  * No cache survives the connection and no extracted database is copied. */
 export function attachGameAProjection(database, {
@@ -78,13 +78,13 @@ export function attachGameAProjection(database, {
       const relative = include.getAttribute("path").replaceAll("\\", "/");
       const file = path.resolve(coreRoot, "Base.SC2Data", relative);
       if (!file.startsWith(`${coreRoot}${path.sep}`) || !realpathSync(file).startsWith(`${physicalRoot}${path.sep}`)) {
-        throw new Error(`Game A Catalog include escapes core: ${relative}`);
+        throw new Error(`Map Runtime Catalog include escapes core: ${relative}`);
       }
       const sourceFile = path.relative(repoRoot, file).replaceAll("\\", "/");
       const document = xml(readFileSync(file, "utf8"), sourceFile, "Catalog");
       for (const element of elementChildren(document.documentElement)) {
         const catalog = catalogForClass(element.tagName, catalogNames);
-        if (catalog === "Unknown") throw new Error(`Unknown Game A Catalog class: ${element.tagName}`);
+        if (catalog === "Unknown") throw new Error(`Unknown Map Runtime Catalog class: ${element.tagName}`);
         if (relative.toLowerCase() !== `gamedata/${catalog.toLowerCase()}data.xml`) executorLayoutSupported = false;
         const id = objectIdFor(element);
         const objectKey = key(catalog, id);
@@ -152,7 +152,7 @@ export function attachGameAProjection(database, {
     const objectKey = key(catalog, id);
     if (fieldsCache.has(objectKey)) return fieldsCache.get(objectKey);
     if (!affected.has(objectKey)) return rawFields(catalog, id);
-    if (visiting.has(objectKey)) throw new Error(`Game A Catalog inheritance cycle: ${catalog}/${id}`);
+    if (visiting.has(objectKey)) throw new Error(`Map Runtime Catalog inheritance cycle: ${catalog}/${id}`);
     visiting = new Set(visiting).add(objectKey);
     const row = object(catalog, id);
     let result = new Map();

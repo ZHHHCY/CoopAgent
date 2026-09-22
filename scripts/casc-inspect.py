@@ -9,6 +9,7 @@ import gzip
 import json
 import os
 import re
+import shutil
 import sys
 from collections import Counter
 from ctypes import c_bool, c_char, c_char_p, c_int, c_size_t, c_ubyte
@@ -19,6 +20,7 @@ from pathlib import Path, PureWindowsPath
 MAX_PATH = 260
 INVALID_HANDLE_VALUE = c_void_p(-1).value
 READ_CHUNK_SIZE = 4 * 1024 * 1024
+CASC_EXTRACTOR_VERSION = 2
 
 BASE_DEPENDENCIES = {
     "core.sc2mod",
@@ -95,10 +97,57 @@ def read_build_version(sc2_root: Path) -> str:
 def default_output(version: str) -> Path:
     local_app_data = os.environ.get("LOCALAPPDATA")
     if not local_app_data:
-        raise RuntimeError("LOCALAPPDATA is not set")
+        raise RuntimeError("系统未设置 LOCALAPPDATA")
     build_match = re.search(r"(\d+)$", version)
     build_name = f"B{build_match.group(1)}" if build_match else version
     return Path(local_app_data) / "CoopAgent" / "casc" / build_name
+
+
+def extraction_is_complete(output_root: Path, sc2_root: Path, version: str) -> bool:
+    manifest_path = output_root / "manifest.json"
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        source = manifest["source"]
+        extract = manifest["extract"]
+        return (
+            manifest["extractorVersion"] == CASC_EXTRACTOR_VERSION
+            and Path(source["starCraftRoot"]).resolve() == sc2_root.resolve()
+            and source["version"] == version
+            and not extract["failures"]
+            and extract["selectedFiles"] == extract["extractedFiles"]
+            and (output_root / "files").is_dir()
+            and (output_root / "known-files.tsv.gz").is_file()
+            and (output_root / "selected-files.tsv").is_file()
+        )
+    except (KeyError, OSError, TypeError, ValueError, json.JSONDecodeError):
+        return False
+
+
+def recover_extraction_output(output_root: Path) -> None:
+    backup = output_root.with_name(f"{output_root.name}.previous")
+    if output_root.exists() and backup.exists():
+        shutil.rmtree(backup)
+    elif not output_root.exists() and backup.exists():
+        backup.rename(output_root)
+    for staging in output_root.parent.glob(f"{output_root.name}.building-*"):
+        if staging.is_dir():
+            shutil.rmtree(staging)
+
+
+def publish_extraction(staging: Path, output_root: Path) -> None:
+    backup = output_root.with_name(f"{output_root.name}.previous")
+    if backup.exists():
+        shutil.rmtree(backup)
+    if output_root.exists():
+        output_root.rename(backup)
+    try:
+        staging.rename(output_root)
+    except BaseException:
+        if not output_root.exists() and backup.exists():
+            backup.rename(output_root)
+        raise
+    if backup.exists():
+        shutil.rmtree(backup)
 
 
 def encode_windows_path(path: Path) -> bytes:
@@ -161,7 +210,7 @@ def keep_package_file(rest: str) -> bool:
 def safe_output_path(root: Path, casc_path: str) -> Path:
     pure = PureWindowsPath(casc_path)
     if pure.is_absolute() or any(part in {"", ".", ".."} for part in pure.parts):
-        raise ValueError(f"Unsafe CASC path: {casc_path}")
+        raise ValueError(f"不安全的 CASC 路径：{casc_path}")
     destination = root.joinpath(*pure.parts)
     destination.resolve().relative_to(root.resolve())
     return destination
@@ -259,7 +308,19 @@ def format_size(size: int) -> str:
 def main() -> int:
     args = parse_args()
     version = read_build_version(args.sc2)
-    output_root = (args.output or default_output(version)).resolve()
+    final_output_root = (args.output or default_output(version)).resolve()
+    final_output_root.parent.mkdir(parents=True, exist_ok=True)
+    recover_extraction_output(final_output_root)
+    if extraction_is_complete(final_output_root, args.sc2, version):
+        print(f"复用已有 CASC 提取结果：{final_output_root}")
+        print(f"CASC_OUTPUT={final_output_root}")
+        return 0
+
+    output_root = final_output_root.with_name(
+        f"{final_output_root.name}.building-{os.getpid()}"
+    )
+    if output_root.exists():
+        shutil.rmtree(output_root)
     files_root = output_root / "files"
     output_root.mkdir(parents=True, exist_ok=True)
 
@@ -312,7 +373,7 @@ def main() -> int:
             except OSError as error:
                 failures.append({"path": item["path"], "error": str(error)})
             if number % 100 == 0 or number == len(selected):
-                print(f"Extracted {number}/{len(selected)} files...", flush=True)
+                print(f"已提取 {number}/{len(selected)} 个文件…", flush=True)
     finally:
         storage.close()
 
@@ -324,6 +385,7 @@ def main() -> int:
 
     manifest = {
         "schemaVersion": 1,
+        "extractorVersion": CASC_EXTRACTOR_VERSION,
         "source": {
             "starCraftRoot": str(args.sc2.resolve()),
             "version": version,
@@ -332,12 +394,12 @@ def main() -> int:
         "index": {
             "knownNames": known_count,
             "availableKnownNames": local_known_count,
-            "compressedFileIndex": str(index_path),
+            "compressedFileIndex": str(final_output_root / index_path.name),
             "topLevels": dict(top_levels.most_common()),
             "modPackages": dict(sorted(mod_packages.items())),
         },
         "extract": {
-            "root": str(files_root),
+            "root": str(final_output_root / "files"),
             "selectedFiles": len(selected),
             "extractedFiles": sum(package_counts.values()),
             "extractedBytes": extracted_bytes,
@@ -393,11 +455,13 @@ def main() -> int:
     )
     (output_root / "CASC-STRUCTURE.txt").write_text("\n".join(structure_lines) + "\n", encoding="utf-8")
 
-    print(f"CASC_OUTPUT={output_root}")
     if failures:
-        print(f"Completed with {len(failures)} extraction failures.", file=sys.stderr)
+        print(f"提取完成，其中 {len(failures)} 个文件失败。", file=sys.stderr)
+        shutil.rmtree(output_root)
         return 2
-    print(f"Completed: {sum(package_counts.values())} files, {format_size(extracted_bytes)}")
+    publish_extraction(output_root, final_output_root)
+    print(f"CASC_OUTPUT={final_output_root}")
+    print(f"提取完成：{sum(package_counts.values())} 个文件，{format_size(extracted_bytes)}")
     return 0
 
 

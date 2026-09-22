@@ -8,11 +8,6 @@ import { executeScalarSearch, normalizeScalarSearchOperation, SCALAR_SEARCH_OPER
 import { solveScalar, checkScalarCalculations, SCALAR_TRANSFORMS, SCALAR_MEANINGS } from './lib/scalar-solve.mjs';
 import { readScopedBatch } from './lib/scoped-read-batch.mjs';
 import { compactPlanResult } from './lib/plan-delivery-view.mjs';
-import { readFile } from 'node:fs/promises';
-import path from 'node:path';
-import { createChangeInterface } from './lib/change-interface.mjs';
-import { createScalarParameters, parameterView } from './lib/scalar-parameters.mjs';
-import { reviewPatchPlan } from './lib/patch-plan-review.mjs';
 
 // Numeric changes use the same executor contract as other host entry points.
 const core = createCoopAgentCore();
@@ -22,30 +17,18 @@ const tasks = createAgentTaskStore(DEFAULT_REPO_ROOT);
 const taskContext = taskContextFromEnvironment();
 const server = new McpServer({ name: 'coop', version: '0.2.0' });
 const calculations = new Map();
-const parameterProfile = process.env.COOPAGENT_TOOL_PROFILE === 'parameters';
-const parameters = parameterProfile ? createScalarParameters({ search, core,
-  baseline: async () => JSON.parse(await readFile(path.join(DEFAULT_REPO_ROOT, 'game-a/runtime-baseline.json'), 'utf8')),
-  review: async plan => reviewPatchPlan(plan, {
-    databaseFile: (await core.projectStatus()).prerequisites.cascDatabase.sqlitePath,
-    coreRoot: path.join(DEFAULT_REPO_ROOT, 'game-a/core/GameA.SC2Mod'), phase: 'pre',
-  }),
-  observe: (input, result) => {
-    if (taskContext) tasks.observe({ ...taskContext, input: { operation: 'scalar.solve', changes: [input] }, output: { results: [result] } });
-  },
-}) : null;
 const handle = fn => async (input = {}) => {
   try {
     if (taskContext) tasks.guard(taskContext);
     const value = await fn(input);
-    const visible = parameterProfile ? parameterView(value) : value;
-    return { content: [{ type: 'text', text: JSON.stringify(visible) }], structuredContent: visible };
+    return { content: [{ type: 'text', text: JSON.stringify(value) }], structuredContent: value };
   } catch (error) {
     return { isError: true, content: [{ type: 'text', text: JSON.stringify({ status: 'error',
       error: error.message, details: error.details ?? error.submissionDetails ?? {} }) }] };
   }
 };
 server.registerTool('project_status', {
-  description: 'Read current Game A baseline, database, applied changes and backend submission status.',
+  description: 'Read current Map Runtime baseline, database, applied changes and backend submission status.',
   annotations: { readOnlyHint: true },
 }, handle(async () => ({ ...await core.projectStatus(), developmentFocus: 'scalar-changes' })));
 server.registerTool('search', {
@@ -72,7 +55,6 @@ server.registerTool('search', {
     maxDepth: z.number().int().min(1).max(4).optional(), limit: z.number().int().min(1).max(100).optional(),
     offset: z.number().int().min(0).optional().describe('entity.get field-page offset. Follow nextOffset when truncated; full does not mean unpaginated.'),
   }, annotations: { readOnlyHint: true },
-  ...(parameterProfile ? { description: 'Resolve commander and object names, then follow object-card groups and exact-field nextQuery. Preserve commanderId. An exact catalog/objectId/path query returns current parameter.value context and parameterId for scalar_change, or a concrete unavailability reason. Card previews are baseline discovery, not current values. usageEvidence distinguishes script input/output and unknown. Read only relevant conditions, consumers or conflicting effects. All operations are read-only.' } : {}),
 }, handle(async input => {
   if (input.harnessCloseout) return { status: 'harness-closeout', ...input.harnessCloseout };
   const inferred = input.operation === undefined;
@@ -80,7 +62,7 @@ server.registerTool('search', {
   const result = await executeScalarSearch(search, input);
   if (inferred) result.inputNormalization = { operation: 'entity.get', reason: 'exact-field-read-without-operation' };
   if (taskContext) result.evidenceKey = tasks.observe({ ...taskContext, input, output: result });
-  return parameters ? parameters.expose(input, result) : result;
+  return result;
 }));
 server.registerTool('search_batch', {
   description:'Read up to 32 known exact fields. Top-level commanderId/prestigeUpgrade provide defaults; each result retains its resolved scope. shared applies to every result; values and edit guards remain per-item. complete=false means some requested items were not delivered: follow nextQuery only if those items are still needed. Reuse existing evidence. No writes.',
@@ -89,7 +71,6 @@ server.registerTool('search_batch', {
     .describe('Host-internal finalization redirect; never set this in a model request.'),commanderId:z.string().min(1).optional(),prestigeUpgrade:z.string().min(1).optional(),queries:z.array(z.object({catalog:z.string().min(1),objectId:z.string().min(1),path:z.string().min(1),
     commanderId:z.string().min(1).optional(),prestigeUpgrade:z.string().min(1).optional()})).min(1).max(32).optional()},
   annotations:{readOnlyHint:true},
-  ...(parameterProfile ? { description: 'Read up to 32 exact numeric fields with commanderId. Each returned field includes its current parameter and bound parameterId when supported. Top-level commander/prestige provide defaults. Follow nextQuery if complete=false; only returned items were delivered. No writes.' } : {}),
 },handle(input=>{
   if(input.harnessCloseout)return {status:'harness-closeout',...input.harnessCloseout};
   if(!input.queries)throw Error('search_batch requires queries');
@@ -97,14 +78,14 @@ server.registerTool('search_batch', {
   const results=readScopedBatch(search,queries,query=>{
     const exact={...query,operation:'entity.get'};
     const result=executeScalarSearch(search,exact);
-    return parameters ? parameters.expose(exact,result) : result;
+    return result;
   });
   const output=pageScalarSearchBatch(queries,results);
   if(taskContext)output.evidenceKey=tasks.observe({...taskContext,input:{operation:'entity.batch',queries},output});
   return output;
 }));
-if (!parameterProfile) server.registerTool('scalar_solve', {
-  description: 'Compute a requested scalar change from exact current Game A facts. Reads Catalog overrides and the selected prestige, computes the desired value, and inversely solves an existing Upgrade modifier. Returns executable expect/value/path plus a checked equation; never applies. Use for set, relative changes, percentages and damage reduction. Unknown runtime conditions are not guessed. Batch independent targets in changes.',
+server.registerTool('scalar_solve', {
+  description: 'Compute a requested scalar change from exact current Map Runtime facts. Reads Catalog overrides and the selected prestige, computes the desired value, and inversely solves an existing Upgrade modifier. Returns executable expect/value/path plus a checked equation; never applies. Use for set, relative changes, percentages and damage reduction. Unknown runtime conditions are not guessed. Batch independent targets in changes.',
   inputSchema: {
     changes: z.array(z.object({
       commanderId: z.string().min(1), prestigeUpgrade: z.string().min(1).optional().describe('Actual primaryUpgrade from commander.get.prestiges, not the display id.'),
@@ -125,7 +106,7 @@ if (!parameterProfile) server.registerTool('scalar_solve', {
   if (taskContext) output.evidenceKey = tasks.observe({ ...taskContext, input: { operation: 'scalar.solve', ...input }, output });
   return output;
 }));
-if (!parameterProfile) server.registerTool('plan_prepare', {
+server.registerTool('plan_prepare', {
   description: 'Save and rehearse a PatchPlan implementing the numeric outcome and necessary supporting edits. Use formatVersion=2 and reuse solver operations/requiredDependsOn. Declare evidence-based scope/isolation; no implicit defaults. The envelope below and Skill plan.md suffice for ordinary scalar plans; read full contract only for an unresolved supporting operation/diagnostic. Full executor Schema and scope/precondition checks remain authoritative. Never applies.',
   // This is a permissive description of the shared v1/v2 envelope, not a new
   // operation whitelist or validator. Unknown operation/extension fields pass
@@ -133,7 +114,7 @@ if (!parameterProfile) server.registerTool('plan_prepare', {
   inputSchema: { plan: z.object({
     formatVersion:z.number().int().describe('Use 2 for new plans; executor retains v1 compatibility.'),
     id:z.string().describe('Unique kebab-case plan ID.'),title:z.string(),target:z.string().describe('game-a.core'),
-    compatibility:z.object({sc2DataBuild:z.string().describe('From project/database evidence.'),runtimeContract:z.number().optional().describe('Game A runtime contract, currently 2.')}).passthrough(),
+    compatibility:z.object({sc2DataBuild:z.string().describe('From project/database evidence.'),runtimeContract:z.number().optional().describe('Map Runtime contract, currently 2.')}).passthrough(),
     userSummary:z.object({text:z.string().describe('One concise user-visible outcome.')}).passthrough().optional(),
     scope:z.object({kind:z.string().describe('Actual scope, e.g. commander; never broaden beyond the request.'),commanderId:z.string().optional()}).passthrough().optional(),
     isolation:z.object({strategy:z.string().describe('Actual strategy: player-upgrade, direct-private, private-clone, player-runtime or global. Choose from evidence, not convenience.'),
@@ -178,46 +159,10 @@ server.registerTool('task_checkpoint', {
   if (!taskContext) throw Error('Task checkpoint requires an active host turn');
   return tasks.checkpoint({ ...taskContext, ...input });
 }));
-if (!parameterProfile) server.registerTool('plan_submit', {
+server.registerTool('plan_submit', {
   description: 'Select ONE final prepared plan for this delivery turn. The plan may cover a coherent subset of independent user requests, but every operation required to make that subset scope-correct and atomic must be included. Record other requested effects as omissions in the delivery checkpoint. Later user feedback opens a new turn and a new plan that depends on applied prior work. Returns application status, not gameplay verification. Never starts the editor or game.',
   inputSchema: { preparationId: z.string().min(1) },
 }, handle(async input => {
   return compactPlanResult(await core.submitPlan(input));
 }));
-if (parameterProfile) server.registerTool('scalar_change', {
-  description: 'Apply authorized numeric edits using parameterId from exact search/search_batch. Supply one batch of parameter IDs and set/add/percentage transforms; backend computes, checks scope and atomically applies. Do not author plans, expect values, dependencies or isolation. Values refer to the returned editable field, not a simulated gameplay total. Unsupported parameters produce a concrete gap with no write. Retry a lost response with the returned preparationId alone. Receipt proves source application, not gameplay.',
-  inputSchema: z.object({
-    summary: z.string().min(4).max(120).optional(),
-    changes: z.array(z.object({ parameterId: z.string().min(1),
-      transform: z.object({ kind: z.enum(SCALAR_TRANSFORMS), value: z.number() }).strict(),
-      meaning: z.enum(SCALAR_MEANINGS).optional().describe('Default number edits the raw field. bonus-percent: 15 means 0.15; supply-cost: positive supply maps to negative Food; damage-reduction-percent converts to incoming damage fraction.'),
-      roundingDecimals: z.number().int().min(0).max(8).optional(),
-    }).strict()).min(1).max(32).optional(),
-    preparationId: z.string().min(1).optional(),
-  }).strict(),
-}, handle(input => parameters.apply(input)));
-// Opt-in experiment only. Production tool availability and permissions remain
-// unchanged until the paired trial establishes both capability and correctness.
-if (process.env.COOPAGENT_TOOL_PROFILE === 'capabilities') {
-  const change=createChangeInterface({core,
-    baseline:async()=>JSON.parse(await readFile(path.join(DEFAULT_REPO_ROOT,'game-a/runtime-baseline.json'),'utf8')),
-    check:plan=>checkScalarCalculations(search,plan,calculations.values()),
-  });
-  server.registerTool('change', {
-    description:'Apply an authorized Game A change in ONE call. Supply explicit operations (kind/catalog/object/path/expect/value, and commanderId when scoped), scope and isolation. The backend creates a PatchPlan record, checks preconditions and scope, then atomically applies it. No required prior search sequence or calculator call. dryRun is optional; prepare/submit remain available for complex work. Does not choose targets or isolation for you. Queries never authorize this tool. A receipt is not gameplay verification.',
-    inputSchema:z.object({
-      id:z.string().optional().describe('Unique kebab-case change ID.'),summary:z.string().min(1).max(120).optional().describe('Brief change summary, at most 120 characters; also used as the plan title.'),
-      scope:z.object({kind:z.string().describe('commander or global; global only when the request is global.'),commanderId:z.string().optional()}).passthrough().optional().describe('Explicit user-requested scope; for a commander use {kind:commander,commanderId:confirmedID}.'),
-      isolation:z.object({strategy:z.string().describe('direct-private for a proven existing private definition; private-clone for explicit cloned/reconnected objects; player-upgrade for commander.stat.set only; player-runtime for explicit filtered Galaxy; global for global scope.'),
-        owner:z.object({catalog:z.string(),object:z.string()}).passthrough().optional().describe('Required for direct-private/private-clone. Identifies the main actual definition or cloned owner; other proven private definitions may be edited in the same transaction. Each operation has its own scope check.')}).passthrough().optional().describe('Declare how the actual operations preserve scope. Exact shape for a private definition: {strategy:direct-private,owner:{catalog:Upgrade,object:confirmedID}}. Existing operandScope.boundedPrivate is static evidence for Value-only edits, not permission to change other fields.'),
-      operations:z.array(z.record(z.string(),z.unknown())).optional().describe('Actual executor operations, each with unique opId. Use existing exact-field edit.operation or author operations yourself. No operation whitelist.'),
-      dependsOn:z.array(z.string()).optional().describe('Required existing plan IDs; retain dependencies from current-field evidence.'),
-      conflictsWith:z.array(z.string()).optional(),dryRun:z.boolean().optional(),
-      plan:z.record(z.string(),z.unknown()).optional().describe('Full PatchPlan escape hatch instead of the short envelope; preserves all advanced fields.'),
-      preparationId:z.string().optional().describe('Resume an already prepared change instead of supplying new content. Cannot combine with other inputs.'),
-    }).strict(),
-  },handle(input=>{
-    return change(input);
-  }));
-}
 await server.connect(new StdioServerTransport());

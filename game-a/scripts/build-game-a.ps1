@@ -21,7 +21,7 @@ if ((Test-Path -LiteralPath $transactionBridge) -and $env:COOPAGENT_GAME_A_BUILD
     if (-not [string]::IsNullOrWhiteSpace($DatabaseFile)) { $bridgeArguments += @('-DatabaseFile', $DatabaseFile) }
     if ($Check) { $bridgeArguments += '-Check' }
     & $nodeExecutable @bridgeArguments
-    if ($LASTEXITCODE -ne 0) { throw 'Game A build was blocked or failed; see the diagnostic above.' }
+    if ($LASTEXITCODE -ne 0) { throw 'Map Runtime build was blocked or failed; see the diagnostic above.' }
     return
 }
 $coreMod = Join-Path $gameARoot 'core\GameA.SC2Mod'
@@ -38,7 +38,7 @@ if ([string]::IsNullOrWhiteSpace($HostId)) {
 $matchingHosts = @($hostRegistry.hosts | Where-Object { $_.id -eq $HostId })
 if ($matchingHosts.Count -ne 1) {
     $availableHosts = (($hostRegistry.hosts | ForEach-Object { $_.id }) -join ', ')
-    throw "Unknown Game A host '$HostId'. Available hosts: $availableHosts"
+    throw "Unknown Map Runtime host '$HostId'. Available hosts: $availableHosts"
 }
 $hostConfig = $matchingHosts[0]
 
@@ -51,9 +51,9 @@ if ([IO.Path]::GetFileName($outputName) -ne $outputName -or -not $outputName.End
 foreach ($requiredSource in @($coreMod, $hostMap, $coreManifestPath, $hostRegistryPath)) {
     if (-not (Test-Path -LiteralPath $requiredSource)) {
         if ($requiredSource -eq $hostMap) {
-            throw "Bundled Game A host is missing. Restore the complete repository checkout: $requiredSource"
+            throw "Bundled Map Runtime host is missing. Restore the complete repository checkout: $requiredSource"
         }
-        throw "Game A source is missing: $requiredSource"
+        throw "Map Runtime source is missing: $requiredSource"
     }
 }
 
@@ -61,7 +61,7 @@ $runtimeBaselinePath = Join-Path $gameARoot 'runtime-baseline.json'
 $commanderCompatGenerator = Join-Path $PSScriptRoot 'generate-commander-compat.mjs'
 foreach ($compatibilitySource in @($runtimeBaselinePath, $commanderCompatGenerator)) {
     if (-not (Test-Path -LiteralPath $compatibilitySource -PathType Leaf)) {
-        throw "Game A commander compatibility source is missing: $compatibilitySource"
+        throw "Map Runtime commander compatibility source is missing: $compatibilitySource"
     }
 }
 $compatNodeExecutable = Join-Path $applicationRoot '.tools\node\node.exe'
@@ -71,10 +71,10 @@ if (-not [string]::IsNullOrWhiteSpace($DatabaseFile)) {
     $compatibilityArguments += @('--database', ([IO.Path]::GetFullPath($DatabaseFile)))
 }
 $compatibilityOutput = @(& $compatNodeExecutable @compatibilityArguments)
-if ($LASTEXITCODE -ne 0) { throw 'Unable to verify the local co-op scripts used by Game A.' }
+if ($LASTEXITCODE -ne 0) { throw 'Unable to verify the local co-op scripts used by Map Runtime.' }
 $compatibilityFingerprint = ([string]$compatibilityOutput[-1]).Trim()
 if ($compatibilityFingerprint -notmatch '^[a-f0-9]{64}$') {
-    throw "Invalid Game A commander compatibility fingerprint: $compatibilityFingerprint"
+    throw "Invalid Map Runtime commander compatibility fingerprint: $compatibilityFingerprint"
 }
 
 function Get-FileSha256 {
@@ -268,7 +268,7 @@ $stagingStampFile = Join-Path $stagingMap '.gamea-build-hash'
 $buildRootPrefix = $buildRoot.TrimEnd('\') + '\'
 foreach ($generatedPath in @($versionsRoot, $latestRoot, $latestPointer, $outputMap, $stagingMap)) {
     if (-not $generatedPath.StartsWith($buildRootPrefix, [StringComparison]::OrdinalIgnoreCase)) {
-        throw "Refusing to build outside the Game A build directory: $generatedPath"
+        throw "Refusing to build outside the Map Runtime build directory: $generatedPath"
     }
 }
 
@@ -289,7 +289,7 @@ if (-not $Check -and
 }
 
 if (-not $Check -and (Test-Path -LiteralPath $outputMap)) {
-    throw "The content-addressed Game A output exists but failed validation: $outputMap"
+    throw "The content-addressed Map Runtime output exists but failed validation: $outputMap"
 }
 
 if (Test-Path -LiteralPath $stagingMap) {
@@ -306,10 +306,10 @@ if (-not [string]::IsNullOrWhiteSpace($DatabaseFile)) {
     $generateCompatibilityArguments += @('--database', ([IO.Path]::GetFullPath($DatabaseFile)))
 }
 $generatedCompatibilityOutput = @(& $compatNodeExecutable @generateCompatibilityArguments)
-if ($LASTEXITCODE -ne 0) { throw 'Unable to generate the Game A commander compatibility layer.' }
+if ($LASTEXITCODE -ne 0) { throw 'Unable to generate the Map Runtime commander compatibility layer.' }
 $generatedCompatibilityFingerprint = ([string]$generatedCompatibilityOutput[-1]).Trim()
 if ($generatedCompatibilityFingerprint -ne $compatibilityFingerprint) {
-    throw 'The local co-op scripts changed while Game A was being built.'
+    throw 'The local co-op scripts changed while Map Runtime was being built.'
 }
 
 # Galaxy modules are declared in the core manifest so include order and init calls
@@ -471,14 +471,14 @@ $requiredStagingFiles = @(
 )
 foreach ($requiredStagingFile in $requiredStagingFiles) {
     if (-not (Test-Path -LiteralPath $requiredStagingFile -PathType Leaf)) {
-        throw "Generated Game A file is missing: $requiredStagingFile"
+        throw "Generated Map Runtime file is missing: $requiredStagingFile"
     }
 }
 
 $mapScriptText = [IO.File]::ReadAllText((Join-Path $stagingMap 'MapScript.galaxy'))
 if (-not $mapScriptText.Contains('include "scripts/generated/GameABootstrap"') -or
     -not $mapScriptText.Contains(([string]$hostConfig.entry) + '();')) {
-    throw "Host '$HostId' does not implement the Game A bootstrap contract."
+    throw "Host '$HostId' does not implement the Map Runtime bootstrap contract."
 }
 
 Get-ChildItem -LiteralPath $outputCatalogRoot -Recurse -File -Filter '*.xml' | ForEach-Object {

@@ -1,3 +1,4 @@
+import { ErrorNotice } from "../common/ErrorNotice";
 import { useState } from "react";
 import { ChevronDown, History, MessageSquarePlus, Trash2 } from "lucide-react";
 import type { AgentSessionSummary } from "../../features/agent/types";
@@ -55,18 +56,18 @@ export function SessionSidebar({
   return (
     <section
       className={`session-sidebar${historyExpanded ? "" : " collapsed"}`}
-      aria-label="Agent Session 管理"
+      aria-label="Agent 会话管理"
     >
       <header className="session-sidebar-header">
         <div>
-          <span>SESSION</span>
+          <span>会话</span>
           <strong>对话会话</strong>
         </div>
         <button
-          aria-label="新建 Session"
+          aria-label="新建会话"
           disabled={disabled}
           onClick={onNew}
-          title="新建 Session"
+          title="新建会话"
           type="button"
         >
           <MessageSquarePlus size={15} />
@@ -76,7 +77,7 @@ export function SessionSidebar({
       <div className="current-session-card">
         <span className={`session-status-dot${activeSessionId ? " connected" : ""}`} />
         <div>
-          <small>当前 Session</small>
+          <small>当前会话</small>
           <strong>{reading ? "正在载入…" : activeTitle}</strong>
           <code>{activeSessionId ?? "发送第一条消息后创建"}</code>
         </div>
@@ -88,7 +89,7 @@ export function SessionSidebar({
         onClick={() => setHistoryExpanded((expanded) => !expanded)}
         type="button"
       >
-        <span><History size={13} />历史 Session</span>
+        <span><History size={13} />历史会话</span>
         <span className="session-history-summary">
           <small>{loading ? "…" : sessions.length}</small>
           <ChevronDown className="session-history-chevron" size={13} />
@@ -119,11 +120,11 @@ export function SessionSidebar({
                     <span>{sessionTimestamp(session.updatedAtMs)}</span>
                   </button>
                   <button
-                    aria-label={`删除 Session：${session.title}`}
+                    aria-label={`删除会话：${session.title}`}
                     className="session-history-delete"
                     disabled={disabled || reading || deleting}
                     onClick={() => onDelete(session)}
-                    title="永久删除这个 OpenCode Session"
+                    title="永久删除这个 OpenCode 会话"
                     type="button"
                   >
                     <Trash2 size={13} />
@@ -132,12 +133,12 @@ export function SessionSidebar({
               );
             })
           ) : (
-            <p className="session-list-state">还没有历史 Session</p>
+            <p className="session-list-state">还没有历史会话</p>
           )}
         </div>
       ) : null}
 
-      {error ? <p className="session-sidebar-error" role="alert">{error}</p> : null}
+      {error ? <ErrorNotice error={error} title="会话操作遇到问题" hint="请等待当前任务结束后重试；持续失败时可重新打开项目。" /> : null}
     </section>
   );
 }

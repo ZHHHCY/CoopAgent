@@ -1,3 +1,4 @@
+import { ErrorNotice } from "../common/ErrorNotice";
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { sc2TooltipToText } from "./formatters";
@@ -191,12 +192,12 @@ export function AppliedChangeHistory({
     <section className="detail-change-summary">
       <header>
         <div>
-          <span>CHANGE HISTORY</span>
+          <span>修改记录</span>
           <strong>全部改动</strong>
         </div>
         <small>{visibleChanges.length}</small>
       </header>
-      {error ? <p className="detail-change-error" role="alert">{error}</p> : visibleChanges.length ? (
+      {error ? <ErrorNotice error={error} title="改动记录暂时无法读取" hint="请点击“重新检查并刷新”，确认当前项目的数据库状态。" /> : visibleChanges.length ? (
         <ul className="detail-change-list">
           {visibleChanges.map((change) => (
             <li key={change.id}>

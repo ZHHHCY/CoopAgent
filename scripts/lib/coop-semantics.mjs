@@ -9,7 +9,7 @@ import { buildFieldVocabulary } from './field-vocabulary.mjs';
 export { COMMANDER_SECTIONS };
 
 // Only parsing rules ship. All records below are derived from the user's local
-// official Catalog/profile tables, never from Game A's temporary SQL overlays.
+// official Catalog/profile tables, never from Map Runtime's temporary SQL overlays.
 export const COOP_SEMANTIC_VERSION = 6;
 const canonical = path => path.replaceAll('.@', '.').replaceAll('[#', '[');
 const address = (catalog, objectId, field) => field ? {
@@ -356,7 +356,7 @@ export function readCoopEntityFacts(db, input) {
     counts:{production:routes.length,abilities:abilities.length,behaviors:behaviors.length,modifierCandidates:mods.size},
     total:items.length, offset, nextOffset:offset+limit<items.length ? offset+limit : null,
     [topic==='overview' ? 'production' : topic]:items.slice(offset,offset+limit),
-    editGuidance:'These are baseline field/parameter candidates, not executable edits. Use entity.get/scalar_solve against the current Game A snapshot for fresh expect, scope, isolation and conditions. Never infer no modifiers from an empty/incomplete list.' };
+    editGuidance:'These are baseline field/parameter candidates, not executable edits. Use entity.get/scalar_solve against the current Map Runtime snapshot for fresh expect, scope, isolation and conditions. Never infer no modifiers from an empty/incomplete list.' };
 }
 
 export function readCoopCommanderFacts(db,input) {

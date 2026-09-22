@@ -26,14 +26,14 @@ $requiredCoreFiles = @(
 )
 foreach ($requiredFile in $requiredCoreFiles) {
     if (-not (Test-Path -LiteralPath $requiredFile -PathType Leaf)) {
-        throw "Required Game A file is missing: $requiredFile"
+        throw "Required Map Runtime file is missing: $requiredFile"
     }
 }
 
 foreach ($officialGalaxy in @('LibCOOC.galaxy', 'LibCOOC_h.galaxy', 'LibCOMI.galaxy', 'LibCOUI.galaxy')) {
     $packagedOfficialSource = Join-Path (Join-Path $coreMod 'Base.SC2Data') $officialGalaxy
     if (Test-Path -LiteralPath $packagedOfficialSource) {
-        throw "Official co-op Galaxy must be generated into disposable build output, not packaged in Game A core: $packagedOfficialSource"
+        throw "Official co-op Galaxy must be generated into disposable build output, not packaged in Map Runtime core: $packagedOfficialSource"
     }
 }
 
@@ -80,10 +80,10 @@ foreach ($declaredPath in $declaredGalaxy) {
 
 $coreGalaxyText = [IO.File]::ReadAllText((Join-Path $coreMod $coreGalaxyRelative.Replace('/', '\')))
 if (-not $coreGalaxyText.Contains('GameA_GeneratedInit();')) {
-    throw 'Game A core does not call the generated feature initializer.'
+    throw 'Map Runtime core does not call the generated feature initializer.'
 }
 if (-not $coreGalaxyText.Contains('GameA_GeneratedConfigureCommander();')) {
-    throw 'Game A core does not call the generated commander configuration hook.'
+    throw 'Map Runtime core does not call the generated commander configuration hook.'
 }
 
 $hostIds = New-Object 'Collections.Generic.HashSet[string]' ([StringComparer]::OrdinalIgnoreCase)
@@ -106,7 +106,7 @@ if ([string]::IsNullOrWhiteSpace($HostId)) {
 else {
     $hostsToValidate = @($hostRegistry.hosts | Where-Object { $_.id -eq $HostId })
     if ($hostsToValidate.Count -ne 1) {
-        throw "Unknown Game A host: $HostId"
+        throw "Unknown Map Runtime host: $HostId"
     }
 }
 
@@ -168,6 +168,6 @@ foreach ($hostConfig in $hostsToValidate) {
     }
 }
 
-Write-Output 'Game A structure validation passed.'
+Write-Output 'Map Runtime structure validation passed.'
 Write-Output "Core source: $coreMod"
 Write-Output "Registered hosts: $($hostIds.Count)"

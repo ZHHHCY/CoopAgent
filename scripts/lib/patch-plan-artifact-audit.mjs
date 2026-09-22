@@ -122,7 +122,7 @@ export async function auditPatchArtifacts({ beforeCore, afterCore, plan, applica
         }
       }
       previous.galaxy.modules = []; next.galaxy.modules = [];
-      if (stable(previous) !== stable(next)) throw new PatchPlanError("Undeclared Game A manifest change");
+      if (stable(previous) !== stable(next)) throw new PatchPlanError("Undeclared Map Runtime manifest change");
     }
     if (file === "Base.SC2Data/GameData.xml") {
       const included = (source) => elementChildren(document(source ?? "<Includes/>").documentElement)

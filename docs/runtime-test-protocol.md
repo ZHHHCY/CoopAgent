@@ -1,8 +1,8 @@
-# Game A 自动测试协议
+# 地图运行层自动测试协议
 
-Game A 自动测试协议在不驱动银河编辑器 UI 的情况下，复现编辑器“测试文档”的运行路径：构建已登记宿主、暂存固定测试地图、通过 `SC2Switcher` 启动 SC2，并把进程与本次运行后产生的日志绑定到同一个 run。
+地图运行层自动测试协议在不驱动银河编辑器 UI 的情况下，复现编辑器“测试文档”的运行路径：构建已登记宿主、暂存固定测试地图、通过 `SC2Switcher` 启动 SC2，并把进程与本次运行后产生的日志绑定到同一个 run。
 
-实现借鉴了 [`sc2-map-editor-mcp`](https://github.com/erivgout/sc2-map-editor-mcp) 对编辑器测试协议的实测记录，但在 CoopAgent 内按 Game A 的固定边界独立实现，没有引入其通用地图 Workspace 或源码。
+实现借鉴了 [`sc2-map-editor-mcp`](https://github.com/erivgout/sc2-map-editor-mcp) 对编辑器测试协议的实测记录，但在 CoopAgent 内按地图运行层的固定边界独立实现，没有引入其通用地图 Workspace 或源码。
 
 ## 固定流程
 
@@ -48,14 +48,14 @@ SC2_x64.exe + run-scoped GameLogs
 
 `log-clean` 只证明“该构建被 SC2 加载且已检查日志”，不证明单位机制、任务胜负或用户预期在玩法层面正确。完整验收仍需运行时断言或人工试玩证据。
 
-官方离线合作测试中，`libCOOC`/`libCOMI` 对 `StatEvent` 或 Achievement 服务的无权限调用记录为已知警告，不当作 Game A 脚本失败；其他 Trigger 错误仍然阻断。
+官方离线合作测试中，`libCOOC`/`libCOMI` 对 `StatEvent` 或 Achievement 服务的无权限调用记录为已知警告，不当作地图运行层脚本失败；其他 Trigger 错误仍然阻断。
 
 ## 入口
 
-桌面端原有“启动 Game A”按钮使用该协议。命令行入口：
+桌面端原有“启动地图运行层”按钮使用该协议。命令行入口：
 
-```bat
-game-a\自动测试GameA.cmd
+```powershell
+node scripts/game-a-runtime-test.mjs start
 ```
 
 查询上一次运行：

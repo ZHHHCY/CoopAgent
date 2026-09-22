@@ -1,4 +1,4 @@
-# Game A Runtime Contract
+# Map Runtime Contract
 
 Status: **frozen baseline v2**, accepted against StarCraft II `5.0.15.97579` / data build `B97579` on 2026-08-02 after the registry-driven generalized build passed a full Oblivion Express playtest.
 
@@ -6,11 +6,11 @@ Implementation amendment 2026-09-12: the local commander-identity compatibility 
 
 Implementation amendment 2026-09-20: optional modules that must refresh state after the official mission startup declare `postMissionStart` in `GameA.Core.json`. The builder emits an always-present `GameA_GeneratedPostMissionStart()` dispatcher, so a host never acquires a direct dependency on an absent feature module. Test-mode economy and production refresh use this lifecycle.
 
-Bundled host amendment 2026-09-21: the repository carries the fixed playable Oblivion Express host at `projects/GameA-OblivionExpress.SC2Map`. Setup does not discover, extract, or rewrite map-cache packages. Builds copy this source into disposable output, while user project changes remain in the Game A core and generated content.
+Bundled host amendment 2026-09-21: the repository carries the fixed playable Oblivion Express host at `projects/GameA-OblivionExpress.SC2Map`. Setup does not discover, extract, or rewrite map-cache packages. Builds copy this source into disposable output, while user project changes remain in the Map Runtime core and generated content.
 
 Difficulty amendment 2026-09-20: the official co-op runtime uses players 3/4 as difficulty carriers and as host enemy slots. Preparation options synchronize the selected difficulty to players 1–4 before common mission initialization, then restore the same value through `beforeMissionStart` before the host map calculates difficulty-dependent state. This keeps commander display, common initialization, enemy AI, host mission values, official damage ratio, and game speed on one difficulty.
 
-Preparation UI amendment 2026-09-20: because Game A bypasses Blizzard's commander-selection page, the same before-mission-start preparation hook invokes the official prestige-summary initializer after the selected prestige has been applied. Gameplay prestige state remains authoritative; this call synchronizes the lower-right HUD with it.
+Preparation UI amendment 2026-09-20: because Map Runtime bypasses Blizzard's commander-selection page, the same before-mission-start preparation hook invokes the official prestige-summary initializer after the selected prestige has been applied. Gameplay prestige state remains authoritative; this call synchronizes the lower-right HUD with it.
 
 Local voice-reward compatibility: offline editor test maps skip only the default commander voice-pack `PlayerAddReward` grant, which the engine rejects locally. Existing voice selection is retained; this does not guarantee the commander's default voice is applied locally. Online and non-test behavior remains unchanged. The guarded official function is generated from hash-checked local sources, not bundled source data.
 
@@ -31,10 +31,10 @@ SC2 game process
 - CoopAgent writes the core source package.
 - The host source owns terrain and mission logic; ordinary commander changes do not modify it.
 - The fixed Oblivion Express host is bundled with the repository and is shared by project templates.
-- The host adapter is the only mission-specific Game A bridge.
+- The host adapter is the only mission-specific Map Runtime bridge.
 - Single-player defeat-alliance compatibility remains host-owned because official mission initialization may restore the host's team-defeat policy. The host applies one named policy function on both sides of that initialization.
 - The build directory is disposable and must never become a source of truth.
-- Automated tests stage and launch only the generated build map. The editor remains an optional manual inspection fallback and never opens Game A core as the runtime source.
+- Automated tests stage and launch only the generated build map. The editor remains an optional manual inspection fallback and never opens Map Runtime core as the runtime source.
 - Build maps are content-addressed. `build/latest/<host-id>.json` points to the current output, allowing the editor process to stay alive while a new map version is built and opened.
 - Runtime Galaxy is embedded into the generated map; custom local Mod Galaxy dependencies are not used.
 - The builder derives the commander-identity compatibility overlay from the user's local co-op database. Extracted official scripts are never source inputs in the repository and exist only in disposable build output.
@@ -70,7 +70,7 @@ Official `StatEvent*` calls can emit local-test permission warnings. They are no
 
 ### Local commander identity boundary
 
-SC2 `5.0.15.97579` accepts native `PlayerCommander` writes for Raynor, Kerrigan, and Artanis in a local test, but rejects later commanders. Game A therefore keeps Blizzard's co-op script identity authoritative for unsupported local commanders and routes the official `LibCOOC`, `LibCOMI`, and `LibCOUI` identity reads through a build-generated wrapper. Supported commanders continue to populate and read the native slot. Engine-native identity remains empty for unsupported commanders; new code must use the co-op/Game A identity rather than assuming that native slot was populated. The reviewed transformer verifies the baseline build, exact source hashes, and replacement counts before producing output.
+SC2 `5.0.15.97579` accepts native `PlayerCommander` writes for Raynor, Kerrigan, and Artanis in a local test, but rejects later commanders. Map Runtime therefore keeps Blizzard's co-op script identity authoritative for unsupported local commanders and routes the official `LibCOOC`, `LibCOMI`, and `LibCOUI` identity reads through a build-generated wrapper. Supported commanders continue to populate and read the native slot. Engine-native identity remains empty for unsupported commanders; new code must use the co-op/Map Runtime identity rather than assuming that native slot was populated. The reviewed transformer verifies the baseline build, exact source hashes, and replacement counts before producing output.
 
 ## Stability rule
 

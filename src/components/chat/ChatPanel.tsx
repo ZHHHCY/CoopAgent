@@ -1,9 +1,9 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { AlertTriangle, ArrowUp, MessageSquareText, Square, TerminalSquare } from "lucide-react";
+import { useEffect, useLayoutEffect, useRef } from "react";
+import { AlertTriangle, ArrowUp, Square } from "lucide-react";
 import type { AgentController } from "../../features/agent/useAgentController";
 import type { Sc2EnvironmentController } from "../../features/environment/useSc2Environment";
-import { OpenCodeTerminal } from "../../OpenCodeTerminal";
 import { MarkdownMessage } from "./MarkdownMessage";
+import { ErrorNotice } from "../common/ErrorNotice";
 import "./ChatPanel.css";
 
 type Props = {
@@ -24,16 +24,10 @@ function AgentPresence({ isThinking = false }: { isThinking?: boolean }) {
 }
 
 export function ChatPanel({ active, agent, environment }: Props) {
-  const [view, setView] = useState<"chat" | "terminal">("chat");
   const messagesRef = useRef<HTMLDivElement>(null);
   const keepMessagesPinned = useRef(true);
 
   useEffect(() => {
-    if (!environment.agentReady && view === "terminal") setView("chat");
-  }, [environment.agentReady, view]);
-
-  useEffect(() => {
-    setView("chat");
     keepMessagesPinned.current = true;
   }, [agent.conversationResetToken]);
 
@@ -46,22 +40,7 @@ export function ChatPanel({ active, agent, environment }: Props) {
 
   return (
     <div className="conversation">
-      <button
-        className="conversation-view-toggle"
-        aria-label={view === "chat" ? "切换到 OpenCode 终端" : "切换到对话"}
-        aria-pressed={view === "terminal"}
-        disabled={!environment.agentReady}
-        onClick={() => setView((current) => current === "chat" ? "terminal" : "chat")}
-        type="button"
-      >
-        {view === "chat" ? <TerminalSquare size={13} /> : <MessageSquareText size={13} />}
-        {view === "chat" ? "终端" : "对话"}
-      </button>
-
-      <div
-        className={`conversation-chat${view === "terminal" ? " is-hidden" : ""}`}
-        aria-hidden={view === "terminal"}
-      >
+      <div className="conversation-chat">
         <div
           className="messages"
           ref={messagesRef}
@@ -84,12 +63,16 @@ export function ChatPanel({ active, agent, environment }: Props) {
               ) : (
                 <div className="message-avatar user"><span>你</span></div>
               )}
-              {(message.status === "thinking" ? message.thinkingHint : message.text) && (
+              {(message.status === "thinking" ? message.thinkingHint : message.text || message.errorDetails) && (
                 <div className="message-body">
                   {message.status === "thinking" ? (
                     <p className="thinking-hint">{message.thinkingHint}</p>
                   ) : message.role === "assistant" ? (
-                    <MarkdownMessage>{message.text}</MarkdownMessage>
+                    <>
+                      {message.text && <MarkdownMessage>{message.text}</MarkdownMessage>}
+                      {message.errorDetails && <ErrorNotice error={message.errorDetails} title="本次请求未完成"
+                        hint="请检查模型配置或网络后重试；已写入的修改以右侧记录为准。" />}
+                    </>
                   ) : (
                     <p>{message.text}</p>
                   )}
@@ -128,9 +111,9 @@ export function ChatPanel({ active, agent, environment }: Props) {
                 }
               }}
               placeholder={agent.isApplying
-                ? "正在应用 Game A 修改，请稍候…"
+                ? "正在应用地图运行层修改，请稍候…"
                 : agent.sessionInitializing || agent.sessionReading
-                ? "正在恢复 Session…"
+                ? "正在恢复会话…"
                 : environment.agentReady
                   ? agent.task?.status === "awaiting_confirmation"
                     ? "回复 Agent 的确认问题，或纠正目标与效果…" : "输入修改指令…"
@@ -166,7 +149,6 @@ export function ChatPanel({ active, agent, environment }: Props) {
         </div>
       </div>
 
-      <OpenCodeTerminal active={active && environment.agentReady && view === "terminal"} />
     </div>
   );
 }

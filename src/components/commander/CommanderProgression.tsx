@@ -1,3 +1,4 @@
+import { ErrorNotice } from "../common/ErrorNotice";
 import type { CommanderChangeIndicator } from "../../changeIndicators";
 import { ChangeIndicator } from "./ChangeIndicator";
 import { commanderDisplayName, commanderFaction, masteryEffectSummary, sc2TooltipToText } from "./formatters";
@@ -40,7 +41,7 @@ export function CommanderProgression({
         {loading ? (
           <p className="commander-level-message">正在读取升级数据…</p>
         ) : error ? (
-          <p className="commander-level-message is-error" role="alert">{error}</p>
+          <ErrorNotice error={error} title="指挥官数据暂时无法读取" hint="请重新选择指挥官；持续失败时，在左侧环境设置中重新检查数据库。" />
         ) : (
           <div className="commander-level-grid">
             {(details?.levelPerks ?? []).slice().sort((a, b) => a.level - b.level).map((perk) => {

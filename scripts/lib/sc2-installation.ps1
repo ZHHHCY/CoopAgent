@@ -1,6 +1,6 @@
-# Windows setup and CASC entry points share the desktop's application config.
+﻿# Windows setup and CASC entry points share the desktop's application config.
 function Get-CoopSc2ConfigPath {
-    if ([string]::IsNullOrWhiteSpace($env:APPDATA)) { throw 'APPDATA is not set.' }
+    if ([string]::IsNullOrWhiteSpace($env:APPDATA)) { throw '系统未设置 APPDATA。' }
     return Join-Path $env:APPDATA 'CoopAgent\sc2-installation.json'
 }
 
@@ -8,7 +8,7 @@ function Get-CoopSc2SavedRoot {
     $configPath = Get-CoopSc2ConfigPath
     if (-not (Test-Path -LiteralPath $configPath -PathType Leaf)) { return $null }
     $config = Get-Content -LiteralPath $configPath -Raw -Encoding utf8 | ConvertFrom-Json
-    if ([string]::IsNullOrWhiteSpace($config.rootPath)) { throw "Missing rootPath in $configPath" }
+    if ([string]::IsNullOrWhiteSpace($config.rootPath)) { throw "配置文件缺少 rootPath：$configPath" }
     return [string]$config.rootPath
 }
 
@@ -17,7 +17,7 @@ function Show-CoopSc2FolderPicker {
     Add-Type -AssemblyName System.Windows.Forms
     $dialog = New-Object System.Windows.Forms.FolderBrowserDialog
     try {
-        $dialog.Description = 'Select the StarCraft II installation folder.'
+        $dialog.Description = '请选择 StarCraft II 安装文件夹。'
         $dialog.ShowNewFolderButton = $false
         if ($dialog.PSObject.Properties.Name -contains 'AutoUpgradeEnabled') {
             $dialog.AutoUpgradeEnabled = $true
@@ -35,15 +35,15 @@ function Resolve-CoopSc2Root {
     param([Parameter(Mandatory = $true)][string]$Selection)
     $candidate = $Selection.Trim().Trim('"')
     if (Test-Path -LiteralPath $candidate -PathType Leaf) {
-        if ([IO.Path]::GetExtension($candidate) -ine '.exe') { throw 'Select the StarCraft II folder or executable.' }
+        if ([IO.Path]::GetExtension($candidate) -ine '.exe') { throw '请选择 StarCraft II 文件夹或可执行文件。' }
         $directory = (Get-Item -LiteralPath $candidate).Directory
         while ($null -ne $directory -and -not (Test-Path -LiteralPath (Join-Path $directory.FullName '.build.info') -PathType Leaf)) {
             $directory = $directory.Parent
         }
-        if ($null -eq $directory) { throw 'Cannot find a StarCraft II installation above this executable.' }
+        if ($null -eq $directory) { throw '无法从这个可执行文件向上找到 StarCraft II 安装目录。' }
         $candidate = $directory.FullName
     }
-    if (-not (Test-Path -LiteralPath $candidate -PathType Container)) { throw "StarCraft II folder not found: $candidate" }
+    if (-not (Test-Path -LiteralPath $candidate -PathType Container)) { throw "找不到 StarCraft II 文件夹：$candidate" }
     $root = (Get-Item -LiteralPath $candidate).FullName
     $missing = @()
     if (-not (Test-Path -LiteralPath (Join-Path $root '.build.info') -PathType Leaf)) { $missing += '.build.info' }
@@ -62,7 +62,7 @@ function Resolve-CoopSc2Root {
         })
     }
     if ($game.Count -eq 0) { $missing += 'Versions/Base*/SC2_x64.exe' }
-    if ($missing.Count -gt 0) { throw "Incomplete StarCraft II installation at ${root}: $($missing -join ', ')" }
+    if ($missing.Count -gt 0) { throw "StarCraft II 安装不完整（${root}），缺少：$($missing -join ', ')" }
     return $root
 }
 

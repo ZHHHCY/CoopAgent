@@ -1,21 +1,21 @@
-# Third-party content notices
+# 第三方内容声明
 
-## Local StarCraft II data
+## 本机 StarCraft II 数据
 
-CoopAgent reads a user's local StarCraft II installation to build its co-op database. The repository and release package contain the parser, database schema and indexing code. They do not contain extracted CASC files or a prebuilt co-op database.
+CoopAgent 从用户本机的 StarCraft II 安装中读取数据并构建合作模式数据库。仓库和发行包包含解析器、数据库结构及索引代码，不包含提取后的 CASC 文件或预构建的合作模式数据库。
 
-Local extraction and database output are stored under `%LOCALAPPDATA%\CoopAgent\` and are not uploaded by CoopAgent.
+本地提取结果和数据库保存在 `%LOCALAPPDATA%\CoopAgent\` 下，CoopAgent 不会上传这些文件。
 
-## Bundled Game A host
+## 随附任务地图
 
-The repository includes a modified local Game A host under:
+仓库在以下位置包含一份供地图运行层使用的修改版任务地图：
 
 ```text
 game-a/projects/GameA-OblivionExpress.SC2Map/
 ```
 
-This host contains map data, terrain, mission scripts, triggers, localized text and game assets derived from Blizzard Entertainment's *StarCraft II* and the co-op mission *Oblivion Express*. StarCraft, StarCraft II, Blizzard Entertainment and related names and assets belong to their respective owners.
+该任务地图包含源自 Blizzard Entertainment 的《StarCraft II》及合作任务“湮灭快车”的地图数据、地形、任务脚本、触发器、本地化文本和游戏资源。StarCraft、StarCraft II、Blizzard Entertainment 以及相关名称和资源归其各自权利人所有。
 
-The host is provided for non-commercial local modding and playtesting by people who have a lawful StarCraft II installation. It is not a standalone game and is not affiliated with, endorsed by or sponsored by Blizzard Entertainment.
+该任务地图供拥有合法 StarCraft II 安装的用户进行非商业的本地模组制作与测试。它不是独立游戏，也不隶属于 Blizzard Entertainment，未得到其认可或赞助。
 
-Any repository license for CoopAgent applies only to original material that the repository authors are entitled to license. It does not grant rights to Blizzard game content, Custom Games or separately identified third-party material. Use and distribution remain subject to the applicable [Blizzard End User License Agreement](https://www.blizzard.com/legal/fba4d00f-c7e4-4883-b8b9-1b4500a402ea/blizzard-end-user-license-agreement) and [Custom Game Acceptable Use Policy](https://www.blizzard.com/legal/2749df07-2b53-4990-b75e-a7cb3610318b/custom-game-acceptable-use-policy).
+CoopAgent 的仓库许可证只适用于仓库作者有权许可的原创内容，不授予 Blizzard 游戏内容、自定义游戏或另行标明的第三方材料相关权利。使用与分发仍须遵守适用的 [Blizzard 最终用户许可协议](https://www.blizzard.com/legal/fba4d00f-c7e4-4883-b8b9-1b4500a402ea/blizzard-end-user-license-agreement)和[自定义游戏可接受使用政策](https://www.blizzard.com/legal/2749df07-2b53-4990-b75e-a7cb3610318b/custom-game-acceptable-use-policy)。

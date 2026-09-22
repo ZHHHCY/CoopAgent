@@ -31,7 +31,8 @@ test('adapter injects the persisted close prompt in place and emits a host contr
   assert.match(lines.join(''), /harness_control/);
 });
 
-for (const submissionTool of ['coop_plan_submit', 'coop_scalar_change']) test(`adapter excludes ${submissionTool} backend wait without changing the model budget`, async () => {
+test('adapter excludes submission backend wait without changing the model budget', async () => {
+  const submissionTool = 'coop_plan_submit';
   const calls = []; let tick = 0;
   const store = { harnessControl(input) {
     calls.push(input);

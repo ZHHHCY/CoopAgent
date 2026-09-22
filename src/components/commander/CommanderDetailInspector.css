@@ -103,16 +103,11 @@
   margin-left: auto;
 }
 
-.detail-change-empty,
-.detail-change-error {
+.detail-change-empty {
   margin: 9px 0 0;
   color: #7898a5;
   font-size: 10px;
   line-height: 1.5;
-}
-
-.detail-change-error {
-  color: #e9a69f;
 }
 
 .detail-inspector-identity {

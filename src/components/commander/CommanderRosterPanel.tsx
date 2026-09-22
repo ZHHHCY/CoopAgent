@@ -144,7 +144,7 @@ export function CommanderRosterPanel({ changes, commander, details, onSelect, se
       ) : null}
       <RosterSection
         title="阵容"
-        label="ROSTER"
+        label="单位"
         units={[...details.roster.units, ...details.roster.buildings]}
         selected={selection?.kind === "unit" && selection.section === "roster" ? selection.key : null}
         changedUnitIds={changes?.unitIds}
@@ -152,7 +152,7 @@ export function CommanderRosterPanel({ changes, commander, details, onSelect, se
       />
       <div className="commander-roster-section">
         <header>
-          <div><span>PANEL</span><strong>面板</strong></div>
+          <div><span>技能</span><strong>面板</strong></div>
           <small>{details.panel.abilities.length + details.panel.summonedUnits.length}</small>
         </header>
         <div className="commander-roster-list">

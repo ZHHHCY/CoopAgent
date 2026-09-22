@@ -1,5 +1,5 @@
 // Thin host adapter for Blizzard's AC_TarsonisTrain mission.
-// Game A owns commander preparation; this map owns terrain and mission execution.
+// Map Runtime owns commander preparation; this map owns terrain and mission execution.
 
 trigger gameA_oblivionExpressStartTrigger;
 
@@ -25,7 +25,7 @@ bool GameA_OblivionExpressMissionLoaded (bool testConds, bool runActions) {
     TriggerDestroy(missionStart);
 
     // Official commander startup has now applied its runtime formulas.
-    // Let installed Game A modules refresh values that must run afterwards.
+    // Let installed Map Runtime modules refresh values that must run afterwards.
     GameA_GeneratedPostMissionStart();
     return true;
 }
@@ -43,7 +43,7 @@ bool GameA_OblivionExpressStart (bool testConds, bool runActions) {
 
     GameA_OblivionExpressKeepSoloSessionAlive();
 
-    // Preserve the official map's startup order while using Game A's local-safe loader.
+    // Preserve the official map's startup order while using Map Runtime's local-safe loader.
     playerSetup = TriggerCreate("gt_Init02Players_Func");
     TriggerExecute(playerSetup, true, false);
     TriggerDestroy(playerSetup);

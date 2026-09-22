@@ -62,8 +62,14 @@ test("resolveRepoPath confines plans to the repository and excludes generated bu
   );
 });
 
-test("projectStatus reports the accepted runtime and clean patch state", async () => {
-  const core = createCoopAgentCore({ repoRoot: DEFAULT_REPO_ROOT });
+test("projectStatus reports this project's runtime and receipts independently of local edits", async t => {
+  const { repoRoot } = await createPatchFixture(t);
+  for (const file of ['game-a/hosts.json', 'game-a/core/GameA.SC2Mod/GameA.Core.json']) {
+    const target = path.join(repoRoot, file);
+    await mkdir(path.dirname(target), { recursive: true });
+    await cp(path.join(DEFAULT_REPO_ROOT, file), target);
+  }
+  const core = createCoopAgentCore({ repoRoot });
   const status = await core.projectStatus();
 
   assert.equal(status.status, "ok");
@@ -72,6 +78,13 @@ test("projectStatus reports the accepted runtime and clean patch state", async (
   assert.equal(status.runtime.sc2DataBuild, "B97579");
   assert.ok(status.runtime.hosts.some((host) => host.id === "oblivion-express"));
   assert.equal(status.patchPlans.appliedCount, 0);
+  await writeFile(path.join(repoRoot, 'game-a/patches/synthetic.receipt.json'), JSON.stringify({
+    planId: 'synthetic', planFormatVersion: 2, operations: [{ opId: 'change-life' }],
+  }));
+  const updated = await core.projectStatus();
+  assert.equal(updated.patchPlans.appliedCount, 1);
+  assert.equal(updated.patchPlans.applied[0].id, 'synthetic');
+  assert.equal(updated.patchPlans.applied[0].operationCount, 1);
 });
 
 test("projectStatus discovers the versioned local CASC database", async () => {
@@ -1320,7 +1333,7 @@ test("game_a_build only accepts registered hosts", async () => {
     commandRunner: async () => ({ stdout: "not used", stderr: "" }),
   });
 
-  await assert.rejects(core.buildGameA({ hostId: "not-a-host" }), /Unknown Game A host/);
+  await assert.rejects(core.buildGameA({ hostId: "not-a-host" }), /Unknown Map Runtime host/);
 });
 
 test("runtime_test_start builds a registered host and launches only its generated map", async () => {

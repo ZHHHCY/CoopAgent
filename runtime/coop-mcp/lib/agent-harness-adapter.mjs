@@ -113,11 +113,11 @@ export function createAgentHarnessAdapter({ repoRoot = process.cwd(), env = proc
         emit({ ...gate, instruction: undefined, instructionInjected: false,
           boundary: 'tool-gate', eventId: input.callID, sessionID: input.sessionID });
       }
-      if (['coop_plan_submit', 'coop_scalar_change'].includes(input.tool)) await boundary('wait-start', { sessionID: input.sessionID });
+      if (input.tool === 'coop_plan_submit') await boundary('wait-start', { sessionID: input.sessionID });
     },
     'tool.execute.after': async input => {
       if (!belongs(input.sessionID)) return;
-      if (['coop_plan_submit', 'coop_scalar_change'].includes(input.tool)) await boundary('wait-end', { sessionID: input.sessionID });
+      if (input.tool === 'coop_plan_submit') await boundary('wait-end', { sessionID: input.sessionID });
       await boundary('tool-end', { eventId: input.callID, sessionID: input.sessionID });
     },
     event: async ({ event }) => {

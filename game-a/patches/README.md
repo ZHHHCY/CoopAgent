@@ -1,4 +1,4 @@
-# Game A Patch Plans
+# Map Runtime Patch Plans
 
 用户确认并由执行器应用的 PatchPlan 保存在此目录，文件名为 `<id>.patch-plan.json`。
 

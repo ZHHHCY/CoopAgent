@@ -5,6 +5,7 @@ export type Message = {
   createdAtMs?: number;
   status?: "thinking";
   thinkingHint?: string;
+  errorDetails?: string;
 };
 
 export type AgentSessionSummary = {

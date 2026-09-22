@@ -8,8 +8,8 @@ export function blindFixtureFile(name) {
   if (name === '.opencode/plugins/coop-trace.js') return true;
   if (/^(\.opencode\/skills\/coop-(scalar-change|query)\/|docs\/schemas\/)/.test(name)) return true;
   if (name.startsWith('.opencode/skills/')) return false;
-  if (['docs/scalar-only.md','docs/scalar-capabilities.md'].includes(name)) return true;
-  if (/^docs\/(patch-plan|unit-cloning-guide|hero-authoring-guide|ability-contract-samples|commander-edit-policy|private-unit-draft)\.md$/.test(name)) return true;
+  if (name === 'docs/scalar-only.md') return true;
+  if (/^docs\/(patch-plan|commander-edit-policy)\.md$/.test(name)) return true;
   if (/^docs\//.test(name)) return false;
   if (/(^|\/)(__tests__|test-assets|examples|fixtures|drafts|patches|build|runtime|maps)(\/|$)/.test(name.replace(/^runtime\//, 'implementation/'))) return false;
   if (/(manual-|wraith|regression|agent-test|agent-task)/i.test(name) && !/^scripts\/(lib\/)?agent-task\.mjs$/.test(name)) return false;

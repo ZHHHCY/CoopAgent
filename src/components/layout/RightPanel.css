@@ -24,18 +24,6 @@
   gap: 8px;
 }
 
-.plan-error {
-  margin: 0;
-  padding: 9px;
-  border: 1px solid rgba(242, 113, 113, 0.45);
-  border-radius: 3px;
-  color: #ffbaba;
-  background: rgba(6, 23, 31, 0.55);
-  font-size: 11px;
-  line-height: 1.5;
-  overflow-wrap: anywhere;
-}
-
 .apply-button {
   width: 100%;
   height: 32px;

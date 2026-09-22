@@ -1,5 +1,5 @@
 import { useProjectBridge } from "../projects/projectBridge";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { isTauri } from "@tauri-apps/api/core";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 
@@ -15,6 +15,7 @@ export type Sc2InstallationStatus = {
   valid: boolean;
   databaseReady: boolean;
   databaseBuild?: string;
+  databaseStatus?: { ready: boolean; code: string; message: string; databaseFile?: string; dataBuild?: string };
   rootPath?: string;
   build?: string;
   editorPath?: string;
@@ -24,25 +25,16 @@ export type Sc2InstallationStatus = {
   configPath: string;
 };
 
-type GameAEditorLaunchResult = {
-  status: "ok";
-  editor: "launched";
-  runId: string;
-  tracePath: string;
-};
-
 export function useSc2Environment() {
   const { invoke } = useProjectBridge();
   const [status, setStatus] = useState<Sc2InstallationStatus | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [error, setError] = useState("");
   const [selecting, setSelecting] = useState(false);
-  const [launchStatus, setLaunchStatus] = useState<
-    "idle" | "launching" | "launched" | "error"
-  >("idle");
-  const [launchError, setLaunchError] = useState("");
+  const [checking, setChecking] = useState(false);
+  const [revision, setRevision] = useState(0);
 
-  useEffect(() => {
+  const refresh = useCallback(async () => {
     if (!isTauri()) {
       setStatus({
         configured: false,
@@ -54,17 +46,22 @@ export function useSc2Environment() {
       });
       return;
     }
-    invoke<Sc2InstallationStatus>("sc2_installation_status")
-      .then(setStatus)
-      .catch((reason: unknown) => setError(String(reason)));
-  }, []);
+    setChecking(true);
+    setError("");
+    try {
+      setStatus(await invoke<Sc2InstallationStatus>("sc2_installation_status"));
+      setRevision(value => value + 1);
+    } catch (reason) { setStatus(null); setError(String(reason)); }
+    finally { setChecking(false); }
+  }, [invoke]);
+  useEffect(() => { void refresh(); }, [refresh]);
 
   const gameReady = status?.valid === true;
-  const agentReady = gameReady || status?.databaseReady === true;
+  const agentReady = status?.databaseReady === true;
 
   async function chooseInstallation(agentBusy: boolean) {
     if (agentBusy) {
-      setError("Agent 运行期间不能切换环境或 Session。");
+      setError("Agent 运行期间不能切换环境或会话。");
       return false;
     }
     if (!isTauri()) {
@@ -85,8 +82,7 @@ export function useSc2Environment() {
         rootPath: selection,
       });
       setStatus(nextStatus);
-      setLaunchStatus("idle");
-      setLaunchError("");
+      setRevision(value => value + 1);
       return true;
     } catch (reason) {
       setError(String(reason));
@@ -96,34 +92,15 @@ export function useSc2Environment() {
     }
   }
 
-  async function launchEditor() {
-    if (!gameReady || launchStatus === "launching") return;
-    if (!isTauri()) {
-      setLaunchStatus("error");
-      setLaunchError("只能在 CoopAgent 桌面版中启动 Game A。");
-      return;
-    }
-
-    setLaunchStatus("launching");
-    setLaunchError("");
-    try {
-      await invoke<GameAEditorLaunchResult>("game_a_editor_launch");
-      setLaunchStatus("launched");
-    } catch (reason) {
-      setLaunchStatus("error");
-      setLaunchError(String(reason));
-    }
-  }
-
   return {
     agentReady,
+    checking,
+    refresh,
+    revision,
     chooseInstallation,
     dialogOpen,
     error,
     gameReady,
-    launchError,
-    launchEditor,
-    launchStatus,
     selecting,
     setDialogOpen,
     status,

@@ -47,7 +47,7 @@ export async function verifyTemplate(templateRoot, appRoot = APP_ROOT) {
   for (const [name, expected] of Object.entries(template.sharedInputs ?? {})) {
     const sharedPath = path.join(appRoot, name);
     if (!existsSync(sharedPath)) {
-      const hint = name.startsWith('game-a/projects/') ? '内置 Game A 宿主缺失，请恢复完整的 CoopAgent 源码' : '请先准备共享输入';
+      const hint = name.startsWith('game-a/projects/') ? '内置地图运行层宿主缺失，请恢复完整的 CoopAgent 源码' : '请先准备共享输入';
       throw Error(`${hint}：${name}`);
     }
     if (hash(await readFile(sharedPath)) !== expected) throw Error(`模板共享宿主已改变，需显式迁移：${name}`);
@@ -62,7 +62,7 @@ async function verifyTemplateFiles(templateRoot, template) {
   }
 }
 const templateHash = template => hash(Buffer.from(JSON.stringify({files:template.files,sharedInputs:template.sharedInputs ?? {}})));
-const defaultTemplateRoot = appRoot => path.join(appRoot, 'game-a/templates/coop-default-v1/6');
+const defaultTemplateRoot = appRoot => path.join(appRoot, 'game-a/templates/coop-default-v1/7');
 function projectName(name) {
   if (typeof name !== 'string' || !name.trim() || name.trim().length > 80) throw Error('项目名称需为 1–80 个字符');
   return name.trim();
@@ -113,6 +113,17 @@ export async function openProject(directory, { appRoot = APP_ROOT } = {}) {
   const databaseFile = path.join(process.env.LOCALAPPDATA || path.join(os.homedir(), '.local/share'), 'CoopAgent/database', manifest.dataBuild, 'coop.sqlite');
   return { ...manifest, appRoot, workspaceRoot, templateRoot, databaseFile };
 }
+export async function openOrMigrateProject(directory, { appRoot = APP_ROOT } = {}) {
+  const workspaceRoot = await realpath(directory);
+  const manifest = await readJson(path.join(workspaceRoot, manifestName));
+  if (!manifest.legacy && manifest.templateId === 'coop-default-v1' && /^\d+$/.test(manifest.templateVersion)) {
+    const current = await readJson(path.join(defaultTemplateRoot(appRoot), 'template.json'));
+    if (Number(manifest.templateVersion) < Number(current.templateVersion)) {
+      return migrateProject(workspaceRoot, { appRoot });
+    }
+  }
+  return openProject(workspaceRoot, { appRoot });
+}
 export async function legacyProject(appRoot = APP_ROOT) {
   const file = path.join(appRoot, manifestName);
   if (!existsSync(file)) {
@@ -155,6 +166,7 @@ export async function migrateProject(directory, { appRoot = APP_ROOT } = {}) {
   const originalManifest = structuredClone(manifest);
   let originalDifficulty = null;
   let originalCoreManifest = null;
+  const originalLocalization = new Map();
   const difficultyRelative = 'game-a/core/GameA.SC2Mod/Base.SC2Data/Generated/PreparationOptions.galaxy';
   const coreManifestRelative = 'game-a/core/GameA.SC2Mod/GameA.Core.json';
   const difficultyPath = path.join(workspaceRoot, difficultyRelative);
@@ -187,6 +199,20 @@ export async function migrateProject(directory, { appRoot = APP_ROOT } = {}) {
       migratedCoreManifest.galaxy.modules.find(module => module.path === testMode.path).postMissionStart = 'GameA_TestModeApplyStartingEconomy';
       await atomicJson(coreManifestPath, migratedCoreManifest);
     }
+    if (Number(source.templateVersion) < 7 && Number(target.templateVersion) >= 7) {
+      for (const relative of [
+        'game-a/core/GameA.SC2Mod/enUS.SC2Data/LocalizedData/GameStrings.txt',
+        'game-a/core/GameA.SC2Mod/zhCN.SC2Data/LocalizedData/GameStrings.txt'
+      ]) {
+        const projectFile = path.join(workspaceRoot, relative);
+        const previous = await readFile(projectFile);
+        const sourceFile = await readFile(path.join(sourceRoot, relative));
+        if (previous.equals(sourceFile)) {
+          originalLocalization.set(projectFile, previous);
+          await atomicFile(projectFile, await readFile(path.join(targetRoot, relative)));
+        }
+      }
+    }
     Object.assign(manifest, { templateId: target.templateId, templateVersion: target.templateVersion,
       templateHash: target.templateHash, dataBuild: target.dataBuild, runtimeContract: target.runtimeContract });
     await atomicJson(manifestPath, manifest);
@@ -194,6 +220,7 @@ export async function migrateProject(directory, { appRoot = APP_ROOT } = {}) {
   } catch (error) {
     if (originalDifficulty) await atomicFile(difficultyPath, originalDifficulty).catch(() => {});
     if (originalCoreManifest) await atomicJson(coreManifestPath, originalCoreManifest).catch(() => {});
+    for (const [file, content] of originalLocalization) await atomicFile(file, content).catch(() => {});
     await atomicJson(manifestPath, originalManifest).catch(() => {});
     throw error;
   }

@@ -687,7 +687,7 @@ function buildUserSummary(plan, names = new Map()) {
     truncated: controlledSummary ? false : unique.length > 6,
     changeItems,
     verificationLevel: "static-review",
-    verificationLabel: "仅完成静态语义审查；尚未执行沙盒预演、写入 Game A 或试玩验证。",
+    verificationLabel: "仅完成静态语义审查；尚未执行沙盒预演、写入地图运行层或试玩验证。",
     runtimeVerified: false,
   };
 }
@@ -2554,11 +2554,11 @@ export function attachPatchExecution(review, reportOperations = [], options = {}
         targets: execution.targets ?? change.targets,
         outcome: status === "already"
           ? applied
-            ? "The installed Game A core already had the requested result."
+            ? "The installed Map Runtime core already had the requested result."
             : "The rehearsed core already has the requested result."
           : status === "changed"
             ? applied
-              ? "The requested result was written to the Game A core."
+              ? "The requested result was written to the Map Runtime core."
               : "The rehearsal produced the requested result."
             : `Executor reported ${status}.`,
       } : {
@@ -2580,10 +2580,10 @@ export function attachPatchExecution(review, reportOperations = [], options = {}
           ? "applied-to-source"
           : "static-preflight",
       verificationLabel: failed
-        ? "静态语义审查未通过；计划未进入沙盒预演，也未写入 Game A。"
+        ? "静态语义审查未通过；计划未进入沙盒预演，也未写入地图运行层。"
         : applied
-          ? "已写入 Game A 并生成 Receipt；尚未启动游戏，未完成试玩验证。"
-          : "静态语义检查与沙盒预演通过；尚未写入 Game A，也未完成试玩验证。",
+          ? "已写入地图运行层并生成 Receipt；尚未启动游戏，未完成试玩验证。"
+          : "静态语义检查与沙盒预演通过；尚未写入地图运行层，也未完成试玩验证。",
       runtimeVerified: false,
     },
     summary: {

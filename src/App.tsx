@@ -25,6 +25,8 @@ function Workspace() {
     databaseBuild: environment.status?.databaseBuild,
     receiptPath: agent.pendingPlan?.receiptPath,
     projectRevision: agent.projectRevision,
+    environmentRevision: environment.revision,
+    databaseMessage: environment.status?.databaseStatus?.message,
   });
 
   return (

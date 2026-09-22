@@ -70,33 +70,6 @@ test('missing operation recovers exact reads without guessing names, scope or wr
   for(const operation of ['entity.resolve','requirement.explain','invalid',''])assert.equal(normalizeScalarSearchOperation({...original,operation}).operation,operation,'never override an explicit operation');
 });
 
-test('capabilities profile adds single-call change without removing advanced executor access',async()=>{
-  const client=new Client({name:'capability-test',version:'1'});
-  const transport=new StdioClientTransport({command:process.execPath,args:[fileURLToPath(new URL('../server.mjs',import.meta.url))],
-    cwd:fileURLToPath(new URL('../../../',import.meta.url)),stderr:'pipe',env:{...process.env,COOPAGENT_TOOL_PROFILE:'capabilities'}});
-  try{
-    await client.connect(transport);
-    const {tools}=await client.listTools();
-    for(const name of ['change','search','scalar_solve','plan_prepare','plan_submit'])assert.ok(tools.some(t=>t.name===name));
-    const change=tools.find(t=>t.name==='change').inputSchema.properties;
-    assert.equal(change.scope.type,'object');assert.equal(change.isolation.properties.owner.type,'object');
-    assert.deepEqual(change.isolation.properties.owner.required,['catalog','object']);
-    const batch=new Ajv({strict:false}).compile(tools.find(t=>t.name==='search_batch').inputSchema);
-    assert(batch({commanderId:'A',prestigeUpgrade:'P1',queries:[{catalog:'Unit',objectId:'One',path:'LifeMax'},{commanderId:'B',catalog:'Unit',objectId:'Two',path:'LifeMax'}]}));
-    for(const input of [{id:'missing-scope'}, {preparationId:'x',id:'ambiguous'}, {plan:{},id:'ambiguous'}, {preparationId:'x',typo:'must not disappear'}])
-      assert.equal((await client.callTool({name:'change',arguments:input})).isError,true);
-  }finally{await client.close();}
-});
-
-test('active capability reference prioritizes scalar correctness without historical clone-first instructions',async()=>{
-  const root=new URL('../../../',import.meta.url);
-  const guide=await readFile(new URL('docs/scalar-capabilities.md',root),'utf8');
-  const policy=await readFile(new URL('docs/commander-edit-policy.md',root),'utf8');
-  for(const term of ['稳定交付','requiredDependsOn','prestigeUpgrade','Reference/Operation','prepared','submitted','applied','未改项'])assert.ok(guide.includes(term),term);
-  assert.match(policy,/旧完整创作路线的兼容元数据/);
-  assert.doesNotMatch(policy,/Agent 的默认路线是私有化|首批唯一新方案快捷规则|Agent 先读 `authoringRoute`/);
-});
-
 test('numeric guidance describes an outcome workflow with supporting edits, not an operation whitelist', async () => {
   const prompt = await readFile(new URL('../prompts/planner.md', import.meta.url), 'utf8');
   const skill = await readFile(new URL('../../../.opencode/skills/coop-scalar-change/SKILL.md', import.meta.url), 'utf8');

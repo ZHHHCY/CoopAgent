@@ -1,3 +1,4 @@
+import { ErrorNotice } from "../common/ErrorNotice";
 import { useEffect, useState } from "react";
 import { ChevronRight, Plus } from "lucide-react";
 import {
@@ -70,11 +71,11 @@ export function CommanderPicker({
 
       <section className="commander-drawer" id="commander-options" aria-label="指挥官列表">
         <div className="commander-drawer-header">
-          <div><span>COMMANDER DATABASE</span><strong>选择指挥官</strong></div>
+          <div><span>指挥官数据库</span><strong>选择指挥官</strong></div>
           <small>{loading ? "正在读取…" : `${commanders.length} 位指挥官`}</small>
         </div>
         {error ? (
-          <p className="commander-picker-message" role="alert">{error}</p>
+          <ErrorNotice error={error} title="数据库内容暂时无法读取" hint="请在左侧环境设置中重新检查数据库，再选择指挥官。" />
         ) : (
           <div className="commander-options">
             {commanders.map((commander) => {

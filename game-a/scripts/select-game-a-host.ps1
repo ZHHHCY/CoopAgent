@@ -5,10 +5,10 @@ $registryPath = Join-Path $gameARoot 'hosts.json'
 $registry = Get-Content -LiteralPath $registryPath -Raw -Encoding utf8 | ConvertFrom-Json
 $hosts = @($registry.hosts)
 if ($hosts.Count -eq 0) {
-    throw 'No Game A hosts are registered.'
+    throw 'No Map Runtime hosts are registered.'
 }
 
-Write-Output 'Available Game A hosts:'
+Write-Output 'Available Map Runtime hosts:'
 for ($index = 0; $index -lt $hosts.Count; $index += 1) {
     Write-Output ('  {0}. {1} [{2}]' -f ($index + 1), $hosts[$index].displayName, $hosts[$index].id)
 }

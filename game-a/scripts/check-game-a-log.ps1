@@ -20,18 +20,18 @@ if ([string]::IsNullOrWhiteSpace($HostId)) {
 }
 $matchingHosts = @($hostRegistry.hosts | Where-Object { $_.id -eq $HostId })
 if ($matchingHosts.Count -ne 1) {
-    throw "Unknown Game A host: $HostId"
+    throw "Unknown Map Runtime host: $HostId"
 }
 $buildRoot = [IO.Path]::GetFullPath((Join-Path $gameARoot 'build'))
 $latestPointer = Join-Path $buildRoot ('latest\' + $HostId + '.json')
 if (Test-Path -LiteralPath $latestPointer -PathType Leaf) {
     $pointer = Get-Content -LiteralPath $latestPointer -Raw -Encoding utf8 | ConvertFrom-Json
     if ([string]$pointer.hostId -ne $HostId -or [string]::IsNullOrWhiteSpace([string]$pointer.output)) {
-        throw "Invalid Game A latest-build pointer: $latestPointer"
+        throw "Invalid Map Runtime latest-build pointer: $latestPointer"
     }
     $outputMap = [IO.Path]::GetFullPath((Join-Path $buildRoot ([string]$pointer.output).Replace('/', '\')))
     if (-not $outputMap.StartsWith($buildRoot.TrimEnd('\') + '\', [StringComparison]::OrdinalIgnoreCase)) {
-        throw "Game A latest-build pointer escapes the build directory: $latestPointer"
+        throw "Map Runtime latest-build pointer escapes the build directory: $latestPointer"
     }
 }
 else {
@@ -40,7 +40,7 @@ else {
 }
 $buildStamp = Join-Path $outputMap '.gamea-build-hash'
 if (-not (Test-Path -LiteralPath $buildStamp -PathType Leaf)) {
-    throw "Game A build stamp is missing: $buildStamp"
+    throw "Map Runtime build stamp is missing: $buildStamp"
 }
 $latestLog = Get-ChildItem -LiteralPath $gameLogs -File -Filter '*ScriptError.txt' |
     Sort-Object LastWriteTime -Descending |
@@ -80,7 +80,7 @@ if ($unclassifiedLog.Contains([string]$baseline.triggerErrorMarker)) {
     throw "An unclassified trigger error was found in: $($latestLog.FullName)"
 }
 
-Write-Output 'Latest Game A runtime log passed.'
+Write-Output 'Latest Map Runtime runtime log passed.'
 Write-Output "SC2: $actualVersion / $actualBuild"
 Write-Output "Known offline StatEvent warnings: $knownWarnings"
 Write-Output "Log: $($latestLog.FullName)"

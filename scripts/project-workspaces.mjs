@@ -1,4 +1,4 @@
-import { createProject, openProject, legacyProject, renameProject, migrateProject, atomicJson } from './lib/project-workspaces.mjs';
+import { createProject, openProject, openOrMigrateProject, legacyProject, renameProject, migrateProject, atomicJson } from './lib/project-workspaces.mjs';
 import path from 'node:path';
 import { readFile } from 'node:fs/promises';
 import { acquireGameALock, assertGameAReadable } from './lib/game-a-transaction.mjs';
@@ -8,7 +8,7 @@ try {
   let result;
   if (operation === 'legacy') result = await legacyProject();
   else if (operation === 'create') result = await createProject({ directory: argument, name });
-  else if (operation === 'open') result = await openProject(argument);
+  else if (operation === 'open') result = await openOrMigrateProject(argument);
   else if (operation === 'rename') result = await renameProject(argument, name);
   else if (operation === 'migrate') result = await migrateProject(argument);
   else if (operation === 'idle') {

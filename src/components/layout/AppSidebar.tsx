@@ -54,8 +54,8 @@ export function AppSidebar({ agent, environment, models }: Props) {
           <img alt="" src={coopAgentIcon} />
         </div>
         <div>
-          <strong>COOP AGENT</strong>
-          <span>SC2 co-op workbench</span>
+          <strong>CoopAgent</strong>
+          <span>SC2 合作模式工作台</span>
         </div>
       </div>
 
@@ -70,7 +70,7 @@ export function AppSidebar({ agent, environment, models }: Props) {
         <div>
           <span>星际争霸 II / 数据库</span>
           <strong>
-            {environment.gameReady
+            {environment.gameReady && !environment.status?.databaseReady ? "数据库尚未就绪" : environment.gameReady
               ? `已验证${environment.status?.build ? ` · ${environment.status.build}` : ""}`
               : environment.status?.databaseReady
                 ? `离线数据库${environment.status.databaseBuild ? ` · ${environment.status.databaseBuild}` : ""}`
@@ -116,9 +116,9 @@ export function AppSidebar({ agent, environment, models }: Props) {
         <Settings2 className="selected-model-settings" size={15} />
       </button>
 
-      <div className="session-token-usage" aria-label="当前 Session Token 用量">
+      <div className="session-token-usage" aria-label="当前会话 Token 用量">
         <TokenUsageRow label="上一轮" usage={agent.sessionUsage.lastTurn} />
-        <TokenUsageRow label="SESSION" total usage={agent.sessionUsage.total} />
+        <TokenUsageRow label="本会话" total usage={agent.sessionUsage.total} />
       </div>
     </aside>
   );

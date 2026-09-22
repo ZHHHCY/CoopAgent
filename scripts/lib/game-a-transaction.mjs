@@ -28,7 +28,7 @@ export function acquireGameALock(repoRoot, { readOnly = false } = {}) {
   } catch (error) {
     db.close();
     if (/locked|busy/i.test(error.message)) {
-      throw new GameATransactionError("Game A 正在预检、应用或构建，请等待当前操作完成后重试。", "project-busy");
+      throw new GameATransactionError("地图运行层正在预检、应用或构建，请等待当前操作完成后重试。", "project-busy");
     }
     throw error;
   }
@@ -48,7 +48,7 @@ export function assertGameAReadable(repoRoot) {
     if (journal.version === 1 && ["committed", "rolled-back"].includes(journal.state)) return;
   } catch { /* Incomplete or damaged journals are never interpreted as success. */ }
   throw new GameATransactionError(
-    `Game A 有未完成的应用事务，已阻止读取/构建。请重试应用以先恢复，或运行 node scripts/game-a-transaction.mjs recover。恢复文件：${root}`,
+    `地图运行层有未完成的应用事务，已阻止读取/构建。请重试应用以先恢复，或运行 node scripts/game-a-transaction.mjs recover。恢复文件：${root}`,
   );
 }
 
@@ -116,21 +116,21 @@ function validateJournal(journal) {
       !["prepared", "applying", "recovery-required", "committed", "rolled-back"].includes(journal.state) ||
       !Array.isArray(journal.entries) || new Set(journal.entries.map((entry) => entry.target)).size !== journal.entries.length ||
       journal.entries.some((entry) => [entry.beforeHash, entry.afterHash].some((hash) => hash !== null && !/^[a-f0-9]{64}$/.test(hash)))) {
-    throw new GameATransactionError("Game A 恢复记录损坏；已保留恢复文件，请勿继续写入工程。");
+    throw new GameATransactionError("地图运行层恢复记录损坏；已保留恢复文件，请勿继续写入工程。");
   }
 }
 
 async function savedBytes(root, index, side, hash) {
   if (hash === null) return null;
   const bytes = await readFile(path.join(root, `${index}.${side}`));
-  if (digest(bytes) !== hash) throw new GameATransactionError(`Game A 恢复文件校验失败：${index}.${side}`);
+  if (digest(bytes) !== hash) throw new GameATransactionError(`地图运行层恢复文件校验失败：${index}.${side}`);
   return bytes;
 }
 
 async function install(target, bytes, token) {
   if (bytes === null) await rm(target, { force: true });
   else await atomicWrite(target, bytes, token);
-  if (digest(await optionalBytes(target)) !== digest(bytes)) throw new GameATransactionError(`Game A 写入后校验失败：${target}`);
+  if (digest(await optionalBytes(target)) !== digest(bytes)) throw new GameATransactionError(`地图运行层写入后校验失败：${target}`);
 }
 
 async function rollback(repoRoot, journal, hooks = {}) {
@@ -155,7 +155,7 @@ async function rollback(repoRoot, journal, hooks = {}) {
     journal.recoveryErrors = failures;
     let journalError = "";
     try { await saveJournal(root, journal); } catch (error) { journalError = `\n记录更新失败：${error.message}`; }
-    throw new GameATransactionError(`Game A 未能完整恢复，已保留备份并阻止后续操作。请重试恢复。恢复目录：${root}\n${failures.join("\n")}${journalError}`);
+    throw new GameATransactionError(`地图运行层未能完整恢复，已保留备份并阻止后续操作。请重试恢复。恢复目录：${root}\n${failures.join("\n")}${journalError}`);
   }
   journal.state = "rolled-back";
   await saveJournal(root, journal);
@@ -175,7 +175,7 @@ export async function recoverGameATransactionLocked(repoRoot) {
   }
   let journal;
   try { journal = JSON.parse(bytes.toString("utf8")); validateJournal(journal); } catch (error) {
-    throw new GameATransactionError(`Game A 恢复记录不可读，恢复材料已保留：${root}\n${error.message}`);
+    throw new GameATransactionError(`地图运行层恢复记录不可读，恢复材料已保留：${root}\n${error.message}`);
   }
   // Validate targets even for completed journals before trusting their state.
   for (const entry of journal.entries) await safeTarget(repoRoot, entry.target);
@@ -196,7 +196,7 @@ export async function recoverGameATransaction(repoRoot) {
 // failed multi-file application. Caller holds the lock from reading the baseline.
 export async function commitGameATransaction(repoRoot, { planId, entries, hooks = {} }) {
   const root = transactionRoot(repoRoot);
-  if (existsSync(root)) throw new GameATransactionError("Game A 已有未清理事务，必须先恢复。");
+  if (existsSync(root)) throw new GameATransactionError("地图运行层已有未清理事务，必须先恢复。");
   await mkdir(root, { recursive: true });
   const journal = { version: 1, id: randomUUID(), planId, state: "prepared", entries: [] };
   let prepared = false;
@@ -219,7 +219,7 @@ export async function commitGameATransaction(repoRoot, { planId, entries, hooks 
     for (let index = 0; index < journal.entries.length; index += 1) {
       const entry = journal.entries[index];
       const target = await safeTarget(repoRoot, entry.target);
-      if (digest(await optionalBytes(target)) !== entry.beforeHash) throw new Error(`Game A 文件在预备后发生变化：${entry.target}`);
+      if (digest(await optionalBytes(target)) !== entry.beforeHash) throw new Error(`地图运行层文件在预备后发生变化：${entry.target}`);
       await hooks.beforeInstall?.(entry, index);
       await install(target, await savedBytes(root, index, "after", entry.afterHash), journal.id);
       await hooks.afterInstall?.(entry, index);

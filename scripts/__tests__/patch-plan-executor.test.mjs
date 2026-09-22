@@ -86,7 +86,7 @@ test("prestige activation uses committed selection before official tech and gran
   assert.doesNotMatch(unscoped, /prestige|PlayerPrestige/);
 });
 
-test("Game A commits prestige selection before generated configuration, ahead of mission tech", async () => {
+test("Map Runtime commits prestige selection before generated configuration, ahead of mission tech", async () => {
   const root = path.join(repositoryRoot, 'game-a/core/GameA.SC2Mod/Base.SC2Data');
   const core = await readFile(path.join(root, 'GameACore.galaxy'), 'utf8');
   const preparation = await readFile(path.join(root, 'Generated/PreparationOptions.galaxy'), 'utf8');

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Channel, isTauri } from "@tauri-apps/api/core";
 import { PENDING_PLAN_KEY, pendingFromSubmission, restorePendingPlan } from "./pending-plan";
 import { messagesFromSnapshot, runIsActive } from "./run-snapshot";
+import { thinkingHintForActivity } from "./thinking-hints";
 import type {
   AgentEvent,
   AgentTask,
@@ -37,29 +38,6 @@ const WELCOME_MESSAGE: Message = {
   text: "你好，我是 CoopAgent。你可以新建或打开项目，用自然语言调整指挥官数值；同一项目的会话共享已有修改。",
 };
 
-const THINKING_HINTS = [
-  "正在采集晶体矿…",
-  "正在采集高能瓦斯…",
-  "正在呼叫休伯利安…",
-  "正在召唤虫群…",
-  "正在集结部队…",
-  "激光钻机充能中…",
-  "免费的爆虫即将孵化…",
-  "正在联络暗影卫队…",
-  "正在校准净化光束…",
-  "还需要更多生物质…",
-  "拉克希尔仪式进行中…",
-  "正在引导聚变打击…",
-  "感染扩散中…",
-  "净化者人格载入中…",
-  "正在收集精华…",
-  "帝国乐队演奏中…",
-  "正在召集亡命之徒…",
-  "正在寻找萨尔纳加神器…",
-  "正在陪盖瑞玩:)",
-  "正在动员帝国劳工…",
-] as const;
-
 function freshConversationMessages(extraMessage?: string): Message[] {
   return extraMessage
     ? [
@@ -71,11 +49,6 @@ function freshConversationMessages(extraMessage?: string): Message[] {
         },
       ]
     : [WELCOME_MESSAGE];
-}
-
-function pickThinkingHint() {
-  const index = Math.floor(Math.random() * THINKING_HINTS.length);
-  return THINKING_HINTS[index] ?? THINKING_HINTS[0];
 }
 
 export function useAgentController(agentReady: boolean) {
@@ -239,7 +212,7 @@ export function useAgentController(agentReady: boolean) {
       setTask(matchingTask);
       setConversationResetToken((current) => current + 1);
       if (session.historyTruncated) {
-        setSessionError("该 Session 很长，界面只恢复最近 400 条文本消息；Agent 上下文仍完整保留。");
+        setSessionError("该会话很长，界面只恢复最近 400 条文本消息；Agent 上下文仍完整保留。");
       }
     } catch (error) {
       if (transitionId === sessionTransitionRef.current) setSessionError(String(error));
@@ -273,7 +246,7 @@ export function useAgentController(agentReady: boolean) {
   const deleteAgentSession = useCallback(async (session: AgentSessionSummary) => {
     if (!isTauri() || busyRef.current || sessionReading || sessionDeletingId) return;
     const confirmed = window.confirm(
-      `确定永久删除这个 OpenCode Session 吗？\n\n${session.title}\n${session.id}\n\n对应的执行 Trace 和已应用 PatchPlan 不会被删除。`,
+      `确定永久删除这个 OpenCode 会话吗？\n\n${session.title}\n${session.id}\n\n对应的执行轨迹和已应用 PatchPlan 不会被删除。`,
     );
     if (!confirmed) return;
     setSessionDeletingId(session.id);
@@ -349,7 +322,7 @@ export function useAgentController(agentReady: boolean) {
         verificationLevel: result.review?.userSummary?.verificationLevel ?? "applied-to-source",
         verificationLabel:
           result.review?.userSummary?.verificationLabel
-          ?? "已写入 Game A 并生成回执；尚未启动游戏，未完成试玩验证。",
+          ?? "已写入地图运行层并生成回执；尚未启动游戏，未完成试玩验证。",
         runtimeVerified: result.review?.userSummary?.runtimeVerified ?? false,
       };
       setProjectRevision((revision) => revision + 1);
@@ -395,7 +368,7 @@ export function useAgentController(agentReady: boolean) {
         role: "assistant",
         text: "",
         status: "thinking",
-        thinkingHint: pickThinkingHint(),
+        thinkingHint: thinkingHintForActivity(),
       },
     ]);
     setDraft("");
@@ -440,7 +413,9 @@ export function useAgentController(agentReady: boolean) {
       if (event.type === "activity") {
         setMessages((current) =>
           current.map((message) =>
-            message.id === responseId ? { ...message, thinkingHint: event.label } : message,
+            message.id === responseId
+              ? { ...message, thinkingHint: thinkingHintForActivity(event.label, message.thinkingHint) }
+              : message,
           ),
         );
         return;
@@ -543,7 +518,8 @@ export function useAgentController(agentReady: boolean) {
         setMessages((current) =>
           current.map((message) =>
             message.id === responseId
-              ? { ...message, text: event.type === "cancelled" ? event.message : `Agent 运行失败：${event.message}`, status: undefined }
+              ? { ...message, text: event.type === "cancelled" ? event.message : message.text,
+                errorDetails: event.type === "error" ? event.message : undefined, status: undefined }
               : message,
           ),
         );
@@ -567,7 +543,7 @@ export function useAgentController(agentReady: boolean) {
       setMessages((current) =>
         current.map((message) =>
           message.id === responseId
-            ? { ...message, text: `无法启动 Agent：${String(error)}`, status: undefined }
+            ? { ...message, errorDetails: String(error), status: undefined }
             : message,
         ),
       );
@@ -600,8 +576,8 @@ export function useAgentController(agentReady: boolean) {
   );
   const activeSessionTitle = useMemo(
     () => activeSessionId
-      ? agentSessions.find((session) => session.id === activeSessionId)?.title ?? "已连接 Session"
-      : "新 Session",
+      ? agentSessions.find((session) => session.id === activeSessionId)?.title ?? "已连接会话"
+      : "新会话",
     [activeSessionId, agentSessions],
   );
 

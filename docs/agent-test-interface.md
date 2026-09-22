@@ -21,7 +21,7 @@
 
 Node.js 24 / pnpm 已在 PATH 时，上述入口也可以写成 `pnpm agent:test build`、`pnpm agent:test init`、`pnpm agent:test run ...`。
 
-`init` 会复制当前源码与 Game A 到 `.tools/agent-regressions/run-*/project`，只读复用本机数据库，并将副本中龙骑士的测试初态设置为 100。它不会修改正式 Game A；源码变动后应重新 `init`，已有副本不会自动同步。
+`init` 会复制当前源码与地图运行层到 `.tools/agent-regressions/run-*/project`，只读复用本机数据库，并将副本中龙骑士的测试初态设置为 100。它不会修改正式地图运行层；源码变动后应重新 `init`，已有副本不会自动同步。
 
 `run` 使用已配置的真实模型，可能消耗 API 额度。默认新建模型会话，可用 `--session <sessionId>` 继续已有会话。无需打开编辑器或游戏，也不会自动启动它们。
 
@@ -31,7 +31,7 @@ Node.js 24 / pnpm 已在 PATH 时，上述入口也可以写成 `pnpm agent:test
 .tools\node\node.exe scripts\agent-test.mjs init --blind
 ```
 
-`--blind` 仍复制当前 Game A 核心，但不复制任何旧 PatchPlan、Receipt、草稿、任务存档、历史测试报告、人工参考答案、测试实现或案例目录；也不执行龙骑士初态计划。它不是“纯官方游戏基线”，而是没有历史答案的当前核心副本。
+`--blind` 仍复制当前地图运行层核心，但不复制任何旧 PatchPlan、Receipt、草稿、任务存档、历史测试报告、人工参考答案、测试实现或案例目录；也不执行龙骑士初态计划。它不是“纯官方游戏基线”，而是没有历史答案的当前核心副本。
 
 只保留运行代码、Schema、通用作者指南和 Skill，模型的外部目录访问被拒绝，运行库链接禁止通过 read 读取；独立 Git 根阻断父项目发现。轨迹插件保留。原文件均保留在正式工程/旧测试副本，不删除。测试需求由外部观察者传入；对照答案和验收报告在副本外保存。请使用新会话，不能传入旧 session 或旧任务的上下文。
 
@@ -87,7 +87,7 @@ pnpm experiment:iterative-harness smoke --label 2026-09-13-harness-smoke
 pnpm experiment:iterative-harness compare --label 2026-09-13-harness-ab
 ```
 
-这两个命令调用已配置的真实模型，可能产生费用；每次尝试使用新 blind fixture，不自动启动编辑器或游戏。运行开始冻结并记录模型、数据 SHA-256、Game A 核心树和工具/提示配置摘要；中途变化会中止后续样本。结果写入 `outputs/<label>/`，包括 manifest、逐条原始宿主事件、逐条结果、汇总 JSON/Markdown。汇总分别统计模型 step、工具调用、工具批次结束、收尾提示实际注入、checkpoint、应用完成时间、首个有用结果、停止原因、明确交付结果和第二轮重复查询；错误结果或只因超时结束不会记为通过。诺娃 no-change 出现提交、换指挥官或 global，以及技术缺口场景提交未经运行时证明的方案，均直接失败。
+这两个命令调用已配置的真实模型，可能产生费用；每次尝试使用新 blind fixture，不自动启动编辑器或游戏。运行开始冻结并记录模型、数据 SHA-256、地图运行层核心树和工具/提示配置摘要；中途变化会中止后续样本。结果写入 `outputs/<label>/`，包括 manifest、逐条原始宿主事件、逐条结果、汇总 JSON/Markdown。汇总分别统计模型 step、工具调用、工具批次结束、收尾提示实际注入、checkpoint、应用完成时间、首个有用结果、停止原因、明确交付结果和第二轮重复查询；错误结果或只因超时结束不会记为通过。诺娃 no-change 出现提交、换指挥官或 global，以及技术缺口场景提交未经运行时证明的方案，均直接失败。
 
 继续同一任务（不能换成新的需求）：
 
@@ -171,6 +171,6 @@ pnpm agent:test stdio --project "测试root" --mode desktop
 .tools\node\node.exe --test scripts\__tests__\agent-test-interface.test.mjs
 ```
 
-2026-09-05 已通过无窗口真实模型验证：一条龙骑士生命 `300 → 200` 的修改完成 prepare、submit 并生成 Receipt；另一条任务在启动后 2.5 秒取消，无提交任务。正式 Game A 保持不变。
+2026-09-05 已通过无窗口真实模型验证：一条龙骑士生命 `300 → 200` 的修改完成 prepare、submit 并生成 Receipt；另一条任务在启动后 2.5 秒取消，无提交任务。正式地图运行层保持不变。
 
 可选桌面模式已经验证：命令行启动真实模型后，点击原生窗口的停止按钮，同一 run 变为 `cancelled`、后端 `busy: false`，页面恢复输入，本轮未提交。

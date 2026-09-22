@@ -1,3 +1,4 @@
+import { ErrorNotice } from "../common/ErrorNotice";
 import { KeyRound, Plus, Trash2, X } from "lucide-react";
 import type { ModelController } from "../../features/models/useModelCatalog";
 import "./Dialogs.css";
@@ -25,7 +26,7 @@ export function ModelDialog({ models }: Props) {
       >
         <header className="model-dialog-header">
           <div>
-            <span className="eyebrow">MODEL PROVIDER</span>
+            <span className="eyebrow">模型服务</span>
             <h2>{models.dialog === "add" ? "接入自己的模型" : "管理模型"}</h2>
           </div>
           <button
@@ -106,7 +107,7 @@ export function ModelDialog({ models }: Props) {
                 </div>
               </label>
             </div>
-            {models.error && <p className="model-error">{models.error}</p>}
+            {models.error && <ErrorNotice error={models.error} title="模型配置未完成" hint="请核对服务地址、模型名称和 API Key，等待当前任务结束后重试。" />}
             <div className="model-dialog-actions">
               <button
                 className="secondary-dialog-button"
@@ -179,7 +180,7 @@ export function ModelDialog({ models }: Props) {
                 </div>
               )}
             </div>
-            {models.error && <p className="model-error">{models.error}</p>}
+            {models.error && <ErrorNotice error={models.error} title="模型配置未完成" hint="请核对服务地址、模型名称和 API Key，等待当前任务结束后重试。" />}
             <div className="model-storage-hint">
               <small>模型配置：{models.catalog?.configPath ?? "用户配置目录"}</small>
               <small>凭据：{models.catalog?.credentialPath ?? "OpenCode auth.json"}</small>

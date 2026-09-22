@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, writeFile, readFile, cp, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, readFile, cp, rm, readdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -52,7 +52,8 @@ test('preparation uses the selected install and this extraction; bootstrap failu
   const f = await fixture(t);
   const scripts = path.join(f.base, 'scripts');
   await mkdir(path.join(scripts, 'lib'), { recursive: true });
-  for (const file of ['configure-sc2.ps1', 'prepare-coopagent.ps1', 'lib/sc2-installation.ps1']) await cp(path.join(repo, 'scripts', file), path.join(scripts, file));
+  for (const file of ['configure-sc2.ps1', 'prepare-coopagent.ps1', 'lib/sc2-installation.ps1', 'lib/process-log.ps1']) await cp(path.join(repo, 'scripts', file), path.join(scripts, file));
+  await writeFile(path.join(scripts, 'lib/setup-prerequisites.ps1'), 'function Assert-CoopSetupPrerequisites {}');
   await writeFile(path.join(scripts, 'bootstrap.cmd'), '@exit /b 0\r\n');
   await writeFile(path.join(scripts, 'casc-inspect.ps1'), `param([string]$StarCraftRoot,[switch]$NoOpen)
 if ($StarCraftRoot -ne $env:COOPAGENT_SC2_ROOT) { throw 'Wrong installation' }
@@ -71,14 +72,51 @@ Write-Output $output
   const args = await readFile(path.join(scripts, 'database-args.txt'), 'utf8');
   assert.ok(args.includes('build --casc-root'));
   assert.ok(args.includes(path.join(scripts, 'chosen-extraction')));
+  const setupLogs = (await readdir(path.join(f.base, '.coopagent/logs'))).filter(name => /^setup-.*\.log$/.test(name));
+  assert.equal(setupLogs.length, 1);
+  assert.match(await readFile(path.join(f.base, '.coopagent/logs', setupLogs[0]), 'utf8'), /退出代码：0/);
   await rm(path.join(scripts, 'observed-root.txt'));
   await rm(path.join(scripts, 'database-args.txt'));
-  await writeFile(path.join(scripts, 'bootstrap.cmd'), '@exit /b 7\r\n');
+  await writeFile(path.join(scripts, 'bootstrap.cmd'), '@echo BOOTSTRAP-STDOUT\r\n@echo BOOTSTRAP-STDERR 1>&2\r\n@exit /b 7\r\n');
   const failed = run(f, prepare, ['-StarCraftRoot', f.root]);
   assert.notEqual(failed.status, 0);
-  assert.ok(failed.stderr.includes('Toolchain preparation failed (7)'), failed.stderr);
+  assert.ok(failed.stderr.includes('工具链准备失败（退出代码 7）'), failed.stderr);
+  const failureLogNames = (await readdir(path.join(f.base, '.coopagent/logs'))).filter(name => !setupLogs.includes(name));
+  assert.equal(failureLogNames.length, 1);
+  const failureLog = await readFile(path.join(f.base, '.coopagent/logs', failureLogNames[0]), 'utf8');
+  for (const text of ['BOOTSTRAP-STDOUT', 'BOOTSTRAP-STDERR', '工具链准备失败', '退出代码：1']) assert.ok(failureLog.includes(text), failureLog);
   await assert.rejects(readFile(path.join(scripts, 'observed-root.txt')), { code: 'ENOENT' });
   await assert.rejects(readFile(path.join(scripts, 'database-args.txt')), { code: 'ENOENT' });
+  await writeFile(path.join(scripts, 'bootstrap.cmd'), '@exit /b 0\r\n');
+  for (const stage of ['EXTRACTION', 'CASC-BUILD']) {
+    const beforeLogs = await readdir(path.join(f.base, '.coopagent/logs'));
+    if (stage === 'EXTRACTION') {
+      await writeFile(path.join(scripts, 'casc-inspect.ps1'), "param([string]$StarCraftRoot,[switch]$NoOpen)\nWrite-Output 'EXTRACTION-PROGRESS'; throw 'EXTRACTION-FAILED'");
+    } else {
+      await cp(path.join(repo, 'scripts/casc-inspect.ps1'), path.join(scripts, 'casc-inspect.ps1'));
+      await writeFile(path.join(scripts, 'casc-bootstrap.ps1'), "Write-Output 'CASC-BUILD-PROGRESS'; throw 'CASC-BUILD-FAILED'");
+    }
+    const result = run(f, prepare, ['-StarCraftRoot', f.root]);
+    assert.notEqual(result.status, 0);
+    const logNames = (await readdir(path.join(f.base, '.coopagent/logs'))).filter(name => !beforeLogs.includes(name));
+    assert.equal(logNames.length, 1);
+    const log = await readFile(path.join(f.base, '.coopagent/logs', logNames[0]), 'utf8');
+    for (const text of [`${stage}-PROGRESS`, `${stage}-FAILED`, '退出代码：1']) assert.ok(log.includes(text), log);
+    await assert.rejects(readFile(path.join(scripts, 'database-args.txt')), { code: 'ENOENT' });
+  }
+});
+
+test('launcher captures native stderr and exit status before the app exists', windows, async t => {
+  const f = await fixture(t), scripts = path.join(f.base, "有 空格 & O'Neil", 'scripts');
+  await mkdir(path.join(scripts, 'lib'), {recursive:true});
+  for (const file of ['start-coopagent.ps1', 'lib/process-log.ps1', 'lib/desktop-app.ps1']) await cp(path.join(repo, 'scripts', file), path.join(scripts, file));
+  await writeFile(path.join(scripts, 'build.cmd'), '@echo COMPILER-OUTPUT\r\n@echo LINK-FAILED 1>&2\r\n@exit /b 9\r\n');
+  const result = run(f, path.join(scripts, 'start-coopagent.ps1'));
+  assert.equal(result.status, 1, result.stderr);
+  const logDir = path.join(scripts, '../.coopagent/logs');
+  const log = await readFile(path.join(logDir, (await readdir(logDir))[0]), 'utf8');
+  // The launcher fails with 1 and retains the original build exit code in its diagnosis.
+  for (const text of ['COMPILER-OUTPUT', 'LINK-FAILED', '退出代码：9', '退出代码：1']) assert.ok(log.includes(text), log);
 });
 
 test('standalone CASC inspection reads the shared config and respects explicit and environment overrides', windows, async t => {

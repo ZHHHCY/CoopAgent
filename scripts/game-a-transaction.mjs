@@ -22,7 +22,7 @@ try {
       });
       await new Promise((resolve, reject) => {
         child.once("error", reject);
-        child.once("exit", (code, signal) => code === 0 ? resolve() : reject(new Error(`Game A build failed (${signal ?? code}).`)));
+        child.once("exit", (code, signal) => code === 0 ? resolve() : reject(new Error(`Map Runtime build failed (${signal ?? code}).`)));
       });
     });
   } else throw new Error("Usage: node scripts/game-a-transaction.mjs recover | build [-HostId <id>] [-Check]");

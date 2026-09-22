@@ -41,3 +41,4 @@ Thumbs.db
 # Local compatibility project identity and per-project UI/session data
 /coop-project.json
 /.coopagent/
+/projects/

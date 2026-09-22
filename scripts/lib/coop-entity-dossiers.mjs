@@ -195,5 +195,5 @@ export function readDossierDetail(db,input) {
     commandIndex:input.commandIndex ?? null, total:items.length,offset,nextOffset:offset+limit<items.length?offset+limit:null,
     scalars:items.slice(offset,offset+limit), effectGraph:{nodes:selectedNodes.map(({catalog,objectId,class:cls,conditions})=>({catalog,objectId,class:cls,conditions})),edges:selectedEdges.filter(e=>reachable.has(key(e.from.catalog,e.from.objectId)))},
     production,unresolved:r.unresolved.map(u=>({...u,...(u.catalog && u.objectId && exists.get(u.catalog,u.objectId) ? {nextQuery:{operation:'entity.get',commanderId:input.commanderId,catalog:u.catalog,objectId:u.objectId,include:['fields','relationships']}}:{})})),coverage:r.coverage,
-    editGuidance:'Field addresses are official baseline candidates. Read nextQuery for current Game A expect/scope before scalar_solve or editing; no runtime totals or isolation inferred.'};
+    editGuidance:'Field addresses are official baseline candidates. Read nextQuery for current Map Runtime expect/scope before scalar_solve or editing; no runtime totals or isolation inferred.'};
 }

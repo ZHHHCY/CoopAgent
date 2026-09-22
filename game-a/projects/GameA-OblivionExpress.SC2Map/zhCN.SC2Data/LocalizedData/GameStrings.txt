@@ -1,3 +1,3 @@
-DocInfo/DescLong=Game A 的官方湮灭快车测试工程。
-DocInfo/DescShort=Game A / 湮灭快车
-DocInfo/Name=Game A - 湮灭快车
+DocInfo/DescLong=CoopAgent 地图运行层使用的湮灭快车任务地图。
+DocInfo/DescShort=CoopAgent / 湮灭快车
+DocInfo/Name=CoopAgent - 湮灭快车

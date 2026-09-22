@@ -1,5 +1,5 @@
 // Reverse evidence for a field, not a runtime evaluator. Reads the same
-// connection-local Game A overlay as entity.get; never writes/rebuilds the DB.
+// connection-local Map Runtime overlay as entity.get; never writes/rebuilds the DB.
 import { canonicalEditPath } from '../../../scripts/lib/catalog-edit-contract.mjs';
 import { createProfileRuleResolver } from '../../../scripts/lib/coop-profile-rules.mjs';
 import { commanderStatIdentity } from '../../../scripts/lib/patch-plan-executor.mjs';
