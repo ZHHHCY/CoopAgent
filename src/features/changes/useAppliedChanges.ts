@@ -1,7 +1,6 @@
 import { useProjectBridge } from "../projects/projectBridge";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { isTauri } from "@tauri-apps/api/core";
-import { buildChangeIndicatorSnapshot } from "../../changeIndicators";
 import type {
   AppliedChangeSummary,
   AppliedChangeSummaryListResult,
@@ -47,10 +46,5 @@ export function useAppliedChanges({ agentReady, databaseBuild, receiptPath, proj
     };
   }, [agentReady, databaseBuild, receiptPath, projectRevision, environmentRevision, databaseMessage, invoke]);
 
-  const indicators = useMemo(
-    () => buildChangeIndicatorSnapshot(items),
-    [items],
-  );
-
-  return { error, indicators, items };
+  return { error, items };
 }

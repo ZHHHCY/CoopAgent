@@ -19,6 +19,19 @@ use std::{
 };
 use tauri::{ipc::Channel, AppHandle, Manager, State};
 
+// Database queries and uncached icon extraction must not open console windows
+// when launched by the Windows desktop app. Keep stdout/stderr available.
+fn background_command(program: impl AsRef<std::ffi::OsStr>) -> Command {
+    let mut command = Command::new(program);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+        command.creation_flags(CREATE_NO_WINDOW);
+    }
+    command
+}
+
 #[cfg(all(feature = "agent-test", debug_assertions))]
 mod agent_test_api;
 #[cfg(all(feature = "agent-test", debug_assertions))]
@@ -2416,7 +2429,7 @@ fn attach_commander_portraits(
             return Err("The commander portrait extractor is missing.".to_string());
         }
 
-        let mut command = Command::new("python");
+        let mut command = background_command("python");
         command
             .current_dir(project_root)
             .env("PATH", runtime_path(project_root)?)
@@ -2538,7 +2551,7 @@ fn attach_commander_perk_icons(
             return Err("The commander perk icon extractor is missing.".to_string());
         }
 
-        let mut command = Command::new("python");
+        let mut command = background_command("python");
         command
             .current_dir(project_root)
             .env("PATH", runtime_path(project_root)?)
@@ -2673,7 +2686,7 @@ fn attach_commander_roster_icons(
             return Err("The commander roster icon extractor is missing.".to_string());
         }
 
-        let mut command = Command::new("python");
+        let mut command = background_command("python");
         command
             .current_dir(project_root)
             .env("PATH", runtime_path(project_root)?)
@@ -2738,7 +2751,7 @@ async fn commander_list( project: Option<ProjectToken>) -> Result<Value, String>
             return Err("The commander database bridge is missing.".to_string());
         }
 
-        let output = Command::new(executable)
+        let output = background_command(executable)
             .envs(projects::environment()?)
             .current_dir(&project_root)
             .env("PATH", runtime_path(&project_root)?)
@@ -2786,7 +2799,7 @@ async fn commander_get(commander_id: String, project: Option<ProjectToken>) -> R
             return Err("The commander database bridge is missing.".to_string());
         }
 
-        let output = Command::new(executable)
+        let output = background_command(executable)
             .envs(projects::environment()?)
             .current_dir(&project_root)
             .env("PATH", runtime_path(&project_root)?)
@@ -2840,7 +2853,7 @@ async fn change_summary_list( project: Option<ProjectToken>) -> Result<Value, St
         if !bridge.is_file() {
             return Err("The change-summary database bridge is missing.".to_string());
         }
-        let output = Command::new(executable)
+        let output = background_command(executable)
             .envs(projects::environment()?)
             .current_dir(&project_root)
             .env("PATH", runtime_path(&project_root)?)

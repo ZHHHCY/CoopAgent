@@ -1,6 +1,4 @@
 import { ErrorNotice } from "../common/ErrorNotice";
-import type { CommanderChangeIndicator } from "../../changeIndicators";
-import { ChangeIndicator } from "./ChangeIndicator";
 import { commanderDisplayName, commanderFaction, masteryEffectSummary, sc2TooltipToText } from "./formatters";
 import type { CommanderWorkspaceSelection } from "./CommanderSelection";
 import type {
@@ -11,7 +9,6 @@ import type {
 import "./CommanderProgression.css";
 
 type Props = {
-  changes?: CommanderChangeIndicator;
   commander: CommanderSummary;
   details: CommanderDetailsResult | null;
   error: string;
@@ -24,7 +21,6 @@ type Props = {
 };
 
 export function CommanderProgression({
-  changes,
   commander,
   details,
   error,
@@ -62,9 +58,6 @@ export function CommanderProgression({
                 >
                   <img alt="" src={perk.iconDataUrl} />
                   <span>{perk.level}</span>
-                  {changes?.levelPerkIds?.includes(perk.id) ? (
-                    <ChangeIndicator label={`${perkName} 有已应用改动`} />
-                  ) : null}
                 </button>
               );
             })}
@@ -78,9 +71,6 @@ export function CommanderProgression({
           <div className="commander-mastery-groups">
             {[1, 2, 3].map((category) => {
               const selected = selection?.kind === "mastery" && selection.category === category;
-              const changed = changes?.masteryCategories?.includes(category)
-                || details.masteries.some((mastery) =>
-                  mastery.category === category && changes?.masteryIds?.includes(mastery.id));
               return (
                 <button
                   className={selected ? "selected" : ""}
@@ -93,9 +83,6 @@ export function CommanderProgression({
                   )}
                 >
                   M{category}
-                  {changed ? (
-                    <ChangeIndicator label={`精通 M${category} 有已应用改动`} />
-                  ) : null}
                 </button>
               );
             })}
@@ -122,8 +109,6 @@ export function CommanderProgression({
           <div className="commander-prestige-groups">
             {details.prestiges.slice().sort((a, b) => a.index - b.index).map((prestige) => {
               const selected = selection?.kind === "prestige" && selection.index === prestige.index;
-              const changed = changes?.prestigeIndexes?.includes(prestige.index)
-                || changes?.prestigeIds?.includes(prestige.id);
               return (
                 <button
                   className={selected ? "selected" : ""}
@@ -136,9 +121,6 @@ export function CommanderProgression({
                   )}
                 >
                   P{prestige.index + 1}
-                  {changed ? (
-                    <ChangeIndicator label={`威望 P${prestige.index + 1} 有已应用改动`} />
-                  ) : null}
                 </button>
               );
             })}

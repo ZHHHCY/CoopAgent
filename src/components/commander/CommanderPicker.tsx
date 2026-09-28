@@ -1,19 +1,12 @@
 import { ErrorNotice } from "../common/ErrorNotice";
 import { useEffect, useState } from "react";
 import { ChevronRight, Plus } from "lucide-react";
-import {
-  type ChangeIndicatorSnapshot,
-  getCommanderChangeIndicator,
-  hasCommanderChanges,
-} from "../../changeIndicators";
-import { ChangeIndicator } from "./ChangeIndicator";
 import { commanderDisplayName, commanderFaction } from "./formatters";
 import type { CommanderSummary } from "./types";
 import "./CommanderPicker.css";
 
 type Props = {
   agentReady: boolean;
-  changeIndicators: ChangeIndicatorSnapshot;
   commanders: CommanderSummary[];
   error: string;
   loading: boolean;
@@ -24,7 +17,6 @@ type Props = {
 
 export function CommanderPicker({
   agentReady,
-  changeIndicators,
   commanders,
   error,
   loading,
@@ -37,10 +29,6 @@ export function CommanderPicker({
   useEffect(() => {
     if (!agentReady) setOpen(false);
   }, [agentReady]);
-
-  const selectedChanges = selectedCommander
-    ? getCommanderChangeIndicator(changeIndicators, selectedCommander.id)
-    : undefined;
 
   return (
     <div className={`commander-picker${open ? " is-open" : ""}`}>
@@ -63,9 +51,6 @@ export function CommanderPicker({
             ? <img alt="" src={selectedCommander.portraitDataUrl} />
             : <Plus size={24} />}
         </span>
-        {hasCommanderChanges(selectedChanges) && selectedCommander ? (
-          <ChangeIndicator label={`${commanderDisplayName(selectedCommander)} 有已应用改动`} />
-        ) : null}
         <ChevronRight className="commander-trigger-chevron" size={15} aria-hidden="true" />
       </button>
 
@@ -80,7 +65,6 @@ export function CommanderPicker({
           <div className="commander-options">
             {commanders.map((commander) => {
               const displayName = commanderDisplayName(commander);
-              const changes = getCommanderChangeIndicator(changeIndicators, commander.id);
               return (
                 <button
                   className={`commander-option ${commanderFaction(commander.id)}${commander.id === selectedCommanderId ? " selected" : ""}`}
@@ -96,9 +80,6 @@ export function CommanderPicker({
                   <span className="commander-option-portrait" aria-hidden="true">
                     <img alt="" src={commander.portraitDataUrl} />
                   </span>
-                  {hasCommanderChanges(changes) ? (
-                    <ChangeIndicator label={`${displayName} 有已应用改动`} />
-                  ) : null}
                 </button>
               );
             })}

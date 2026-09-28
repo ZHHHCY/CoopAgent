@@ -1,7 +1,5 @@
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
-import type { CommanderChangeIndicator } from "../../changeIndicators";
 import { CommanderPanelAbilityCard, CommanderUnitCard } from "./CommanderCards";
-import { ChangeIndicator } from "./ChangeIndicator";
 import { commanderDisplayName, commanderFaction } from "./formatters";
 import type { CommanderWorkspaceSelection } from "./CommanderSelection";
 import type {
@@ -14,7 +12,6 @@ import type {
 import "./CommanderRosterPanel.css";
 
 type Props = {
-  changes?: CommanderChangeIndicator;
   commander: CommanderSummary;
   details: CommanderDetailsResult;
   selection: CommanderWorkspaceSelection;
@@ -26,7 +23,7 @@ type Props = {
 
 type CardPosition = { left: number; top: number } | null;
 
-export function CommanderRosterPanel({ changes, commander, details, onSelect, selection }: Props) {
+export function CommanderRosterPanel({ commander, details, onSelect, selection }: Props) {
   const [unitCardPosition, setUnitCardPosition] = useState<CardPosition>(null);
   const [abilityCardPosition, setAbilityCardPosition] = useState<CardPosition>(null);
   const panelRef = useRef<HTMLElement>(null);
@@ -147,7 +144,6 @@ export function CommanderRosterPanel({ changes, commander, details, onSelect, se
         label="单位"
         units={[...details.roster.units, ...details.roster.buildings]}
         selected={selection?.kind === "unit" && selection.section === "roster" ? selection.key : null}
-        changedUnitIds={changes?.unitIds}
         onSelect={(unit, event) => selectUnit(unit, "roster", event)}
       />
       <div className="commander-roster-section">
@@ -170,10 +166,6 @@ export function CommanderRosterPanel({ changes, commander, details, onSelect, se
                 type="button"
               >
                 <img alt="" draggable="false" src={ability.iconDataUrl} />
-                {changes?.abilityIds?.includes(ability.abilityId)
-                  || changes?.abilityIds?.includes(ability.id)
-                  ? <ChangeIndicator label={`${name} 有已应用改动`} />
-                  : null}
               </button>
             );
           })}
@@ -193,9 +185,6 @@ export function CommanderRosterPanel({ changes, commander, details, onSelect, se
                 type="button"
               >
                 <img alt="" draggable="false" src={unit.iconDataUrl} />
-                {changes?.unitIds?.includes(unit.unitId) ? (
-                  <ChangeIndicator label={`${name} 有已应用改动`} />
-                ) : null}
               </button>
             );
           })}
@@ -220,14 +209,12 @@ export function CommanderRosterPanel({ changes, commander, details, onSelect, se
 }
 
 function RosterSection({
-  changedUnitIds,
   label,
   onSelect,
   selected,
   title,
   units,
 }: {
-  changedUnitIds?: readonly string[];
   label: string;
   onSelect: (unit: CommanderRosterUnit, event: React.MouseEvent<HTMLButtonElement>) => void;
   selected: string | null;
@@ -251,9 +238,6 @@ function RosterSection({
               type="button"
             >
               <img alt="" draggable="false" src={unit.iconDataUrl} />
-              {changedUnitIds?.includes(unit.unitId) ? (
-                <ChangeIndicator label={`${name} 有已应用改动`} />
-              ) : null}
             </button>
           );
         })}

@@ -34,7 +34,6 @@ function Workspace() {
       <AppSidebar agent={agent} environment={environment} models={models} />
       <WorkspaceCenter
         agent={agent}
-        changeIndicators={appliedChanges.indicators}
         environment={environment}
       />
       <RightPanel

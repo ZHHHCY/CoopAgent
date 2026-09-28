@@ -8,7 +8,6 @@ import {
 } from "react";
 import type { AgentController } from "../../features/agent/useAgentController";
 import type { Sc2EnvironmentController } from "../../features/environment/useSc2Environment";
-import type { ChangeIndicatorSnapshot } from "../../changeIndicators";
 import type { CommanderInspectionSelection } from "../commander/types";
 import { CommanderDetailInspector } from "../commander/CommanderDetailInspector";
 import { CommanderWorkspace } from "../commander/CommanderWorkspace";
@@ -17,7 +16,6 @@ import "./WorkspaceCenter.css";
 
 type Props = {
   agent: AgentController;
-  changeIndicators: ChangeIndicatorSnapshot;
   environment: Sc2EnvironmentController;
 };
 
@@ -29,7 +27,7 @@ function clampDatabaseSplit(value: number) {
   return Math.min(MAX_DATABASE_SPLIT, Math.max(MIN_DATABASE_SPLIT, value));
 }
 
-export function WorkspaceCenter({ agent, changeIndicators, environment }: Props) {
+export function WorkspaceCenter({ agent, environment }: Props) {
   const [view, setView] = useState<WorkspaceView>("agent");
   const [databaseOpened, setDatabaseOpened] = useState(false);
   const [inspection, setInspection] = useState<CommanderInspectionSelection>(null);
@@ -119,7 +117,6 @@ export function WorkspaceCenter({ agent, changeIndicators, environment }: Props)
             {databaseOpened && <CommanderWorkspace
               agentReady={environment.agentReady}
               projectRevision={agent.projectRevision + (environment.revision ?? 0)}
-              changeIndicators={changeIndicators}
               onInspectSelection={setInspection}
               sc2RootPath={environment.status?.rootPath}
             />}

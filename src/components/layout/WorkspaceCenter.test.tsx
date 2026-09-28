@@ -27,7 +27,7 @@ test('database loads on first visit, retains selection and chat draft, and refre
   document.body.append(div);
   const root = createRoot(div);
   const props = {
-    agent: { projectRevision: 0 }, environment: { agentReady: true, status: { rootPath: 'game-root' } }, changeIndicators: { commanders: [] },
+    agent: { projectRevision: 0 }, environment: { agentReady: true, status: { rootPath: 'game-root' } },
   } as unknown as ComponentProps<typeof WorkspaceCenter>;
   const click = async (selector: string) => act(async () => div.querySelector<HTMLButtonElement>(selector)!.click());
   try {

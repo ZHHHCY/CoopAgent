@@ -1,8 +1,4 @@
 import { useEffect, useState } from "react";
-import {
-  type ChangeIndicatorSnapshot,
-  getCommanderChangeIndicator,
-} from "../../changeIndicators";
 import { CommanderPicker } from "./CommanderPicker";
 import { CommanderProgression } from "./CommanderProgression";
 import { CommanderRosterPanel } from "./CommanderRosterPanel";
@@ -13,7 +9,6 @@ import { useCommanderCatalog } from "./useCommanderCatalog";
 type Props = {
   agentReady: boolean;
   projectRevision: number;
-  changeIndicators: ChangeIndicatorSnapshot;
   sc2RootPath?: string;
   onInspectSelection: (selection: CommanderInspectionSelection) => void;
 };
@@ -21,7 +16,6 @@ type Props = {
 export function CommanderWorkspace({
   agentReady,
   projectRevision,
-  changeIndicators,
   sc2RootPath,
   onInspectSelection,
 }: Props) {
@@ -32,10 +26,6 @@ export function CommanderWorkspace({
     setSelection(null);
     onInspectSelection(null);
   }, [agentReady, catalog.selectedCommanderId, onInspectSelection, projectRevision]);
-
-  const selectedChanges = catalog.selectedCommander
-    ? getCommanderChangeIndicator(changeIndicators, catalog.selectedCommander.id)
-    : undefined;
 
   function select(
     nextSelection: CommanderWorkspaceSelection,
@@ -49,7 +39,6 @@ export function CommanderWorkspace({
     <div className="workspace-reserved">
       <CommanderPicker
         agentReady={agentReady}
-        changeIndicators={changeIndicators}
         commanders={catalog.commanders}
         error={catalog.listError}
         loading={catalog.listLoading}
@@ -60,7 +49,6 @@ export function CommanderWorkspace({
 
       {catalog.selectedCommander ? (
         <CommanderProgression
-          changes={selectedChanges}
           commander={catalog.selectedCommander}
           details={catalog.details}
           error={catalog.detailsError}
@@ -72,7 +60,6 @@ export function CommanderWorkspace({
 
       {catalog.selectedCommander && catalog.details && !catalog.detailsLoading ? (
         <CommanderRosterPanel
-          changes={selectedChanges}
           commander={catalog.selectedCommander}
           details={catalog.details}
           onSelect={select}
