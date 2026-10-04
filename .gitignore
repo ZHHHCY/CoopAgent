@@ -25,6 +25,7 @@ game-a/projects/.gitkeep
 .tools/
 .codex-tmp/
 src-tauri/target/
+/artifacts/
 
 # Editor directories and files
 .vscode/*

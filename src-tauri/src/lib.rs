@@ -98,12 +98,12 @@ fn project_root() -> Result<PathBuf, String> {
         if let Some(root) = application_root_from_executable(&executable) { return Ok(root); }
     }
     if cfg!(debug_assertions) { return Ok(source); }
-    Err("请将桌面程序保留在 CoopAgent 仓库中，并通过 start.cmd 启动。".into())
+    Err("请将桌面程序保留在 CoopAgent 源码仓库或完整便携包中。".into())
 }
 
 fn application_root_from_executable(executable: &Path) -> Option<PathBuf> {
     executable.parent()?.ancestors().find(|root| {
-        root.join("src-tauri/tauri.conf.json").is_file()
+        (root.join("src-tauri/tauri.conf.json").is_file() || root.join("portable.json").is_file())
             && root.join("runtime/coop-mcp/server.mjs").is_file()
             && root.join("opencode.json").is_file()
     }).map(Path::to_path_buf)
@@ -172,7 +172,9 @@ fn runtime_path(project_root: &std::path::Path) -> Result<std::ffi::OsString, St
         project_root.join(".tools/node/bin")
     };
     let current_path = std::env::var_os("PATH").unwrap_or_default();
-    std::env::join_paths(std::iter::once(node_bin).chain(std::env::split_paths(&current_path)))
+    let python_bin = project_root.join(".tools/python");
+    let bundled = std::iter::once(node_bin).chain(python_bin.is_dir().then_some(python_bin));
+    std::env::join_paths(bundled.chain(std::env::split_paths(&current_path)))
         .map_err(|error| format!("Unable to prepare the runtime PATH: {error}"))
 }
 
@@ -1971,12 +1973,8 @@ fn handle_agent_json_line(
             );
         }
         Some("reasoning") => {
-            // Provider reasoning is transient activity, never answer/history text.
-            if !observations.checkpoint_saved {
-                if let Some(text) = event.pointer("/part/text").and_then(Value::as_str).filter(|text| !text.trim().is_empty()) {
-                    send_agent_event(channel, AgentEvent::Activity { label: text.to_string() });
-                }
-            }
+            // Keep the last host/tool status stable. Provider reasoning can be
+            // arbitrarily long and must not become a transient UI label.
         }
         Some("text") => {
             if let Some(text) = event.pointer("/part/text").and_then(Value::as_str) {
@@ -3789,6 +3787,13 @@ mod tests {
             assert_eq!(super::application_root_from_executable(&exe), Some(root));
         }
         assert_eq!(super::application_root_from_executable(&base.join("unrelated/coopagent.exe")), None);
+        let portable = base.join("portable copy");
+        for file in ["portable.json", "runtime/coop-mcp/server.mjs", "opencode.json"] {
+            let path = portable.join(file);
+            std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+            std::fs::write(path, "fixture").unwrap();
+        }
+        assert_eq!(super::application_root_from_executable(&portable.join("CoopAgent.exe")), Some(portable));
         assert!(base.parent().is_some_and(|p| p == std::env::temp_dir()));
         std::fs::remove_dir_all(base).unwrap();
     }
@@ -4349,7 +4354,7 @@ mod tests {
     }
 
     #[test]
-    fn model_reasoning_is_transient_activity_without_becoming_the_answer() {
+    fn model_reasoning_does_not_replace_activity_or_become_the_answer() {
         let path = std::env::temp_dir().join(format!("coop-activity-{}.jsonl", super::new_run_id()));
         let mut trace = TraceWriter { run_id: "run-1".into(), path: path.clone(), sequence: 0 };
         let snapshot = std::sync::Arc::new(std::sync::Mutex::new(Some(snapshot_fixture())));
@@ -4358,19 +4363,26 @@ mod tests {
         let (mut session, mut text, mut ready) = (None, String::new(), false);
         let mut observations = AgentObservationState::default();
         let reasoning = |value: &str| serde_json::json!({ "type": "reasoning", "sessionID": "s1", "part": { "text": value } }).to_string();
-        handle_agent_json_line(&reasoning("正在核对字段"), &sink, &mut session, &mut text, &mut observations, &mut ready, &mut trace);
-        assert_eq!(snapshot.lock().unwrap().as_ref().unwrap().activity, "正在核对字段");
+        let step = serde_json::json!({ "type": "step_start", "sessionID": "s1", "part": { "id": "step-1" } });
+        handle_agent_json_line(&step.to_string(), &sink, &mut session, &mut text, &mut observations, &mut ready, &mut trace);
+        handle_agent_json_line(&reasoning(&"INTERNAL_REASONING\n".repeat(200)), &sink, &mut session, &mut text, &mut observations, &mut ready, &mut trace);
+        assert_eq!(snapshot.lock().unwrap().as_ref().unwrap().activity, "正在分析项目…");
         assert!(snapshot.lock().unwrap().as_ref().unwrap().text.is_empty());
         assert!(text.is_empty());
+        let tool = serde_json::json!({ "type": "tool_use", "sessionID": "s1", "part": {
+            "tool": "coop_search", "callID": "search-1", "state": { "status": "running" } } });
+        handle_agent_json_line(&tool.to_string(), &sink, &mut session, &mut text, &mut observations, &mut ready, &mut trace);
+        handle_agent_json_line(&reasoning("正在核对字段"), &sink, &mut session, &mut text, &mut observations, &mut ready, &mut trace);
         handle_agent_json_line(&reasoning("  "), &sink, &mut session, &mut text, &mut observations, &mut ready, &mut trace);
-        assert_eq!(snapshot.lock().unwrap().as_ref().unwrap().activity, "正在核对字段");
+        assert_eq!(snapshot.lock().unwrap().as_ref().unwrap().activity, "正在调用 coop_search…");
         let answer = serde_json::json!({ "type": "text", "sessionID": "s1", "part": { "text": "当前生命值为45。" } });
         handle_agent_json_line(&answer.to_string(), &sink, &mut session, &mut text, &mut observations, &mut ready, &mut trace);
         observations.checkpoint_saved = true;
         handle_agent_json_line(&reasoning("交付后到达的旧内容"), &sink, &mut session, &mut text, &mut observations, &mut ready, &mut trace);
-        assert_eq!(snapshot.lock().unwrap().as_ref().unwrap().activity, "正在核对字段");
+        assert_eq!(snapshot.lock().unwrap().as_ref().unwrap().activity, "正在调用 coop_search…");
         assert_eq!(snapshot.lock().unwrap().as_ref().unwrap().text, "当前生命值为45。");
         assert_eq!(text, "当前生命值为45。");
+        assert!(!std::fs::read_to_string(&path).unwrap().contains("INTERNAL_REASONING"));
         let _ = std::fs::remove_file(path);
     }
 }

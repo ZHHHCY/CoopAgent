@@ -97,7 +97,7 @@ test("a reloaded page recovers text and can stop the original backend run withou
   expect(container.textContent).toContain("已停止");
 });
 
-test("generic waiting uses themed copy while concrete activity and model text remain intact", async () => {
+test("thinking hints keep host statuses stable without flashing reasoning; replies remain intact", async () => {
   vi.spyOn(Math, "random").mockReturnValue(0);
   await mount();
   await act(async () => agent.setDraft("查询单位生命"));
@@ -109,10 +109,16 @@ test("generic waiting uses themed copy while concrete activity and model text re
     await act(async () => channel.onmessage({ type: "activity", label }));
     expect(latest().thinkingHint).toBe("正在采集晶体矿…");
   }
-  for (const label of ["正在调用 coop_search…", "我需要确认当前项目中的生命值。", "正在完成最终收尾…"]) {
+  for (const label of ["正在调用 coop_search…", "正在完成最终收尾…"]) {
     await act(async () => channel.onmessage({ type: "activity", label }));
     expect(latest().thinkingHint).toBe(label);
     expect(latest().status).toBe("thinking");
+    for (const reasoning of ["我需要确认当前项目中的生命值。", "很长的中间推理\n".repeat(200), '{"results":[1,2,3]}']) {
+      await act(async () => channel.onmessage({ type: "activity", label: reasoning }));
+      expect(latest().thinkingHint).toBe(label);
+      expect(latest().status).toBe("thinking");
+      expect(latest().text).toBe("");
+    }
   }
   await act(async () => channel.onmessage({ type: "text", text: "当前生命值为45。" }));
   await act(async () => channel.onmessage({ type: "activity", label: "正在分析项目…" }));
@@ -147,6 +153,12 @@ test("restored waiting has stable themed copy and preserves real activity and fi
   expect(messagesFromSnapshot(messages, waiting)).toEqual(messages);
   const working = messagesFromSnapshot(messages, run({ text: "", activity: "正在调用 coop_search…" }));
   expect(working[working.length - 1]?.thinkingHint).toBe("正在调用 coop_search…");
+  const reasoning = run({ text: "", activity: "很长的中间推理\n".repeat(200) });
+  const restored = messagesFromSnapshot(working, reasoning);
+  expect(restored[restored.length - 1]?.thinkingHint).toBe("正在调用 coop_search…");
+  const fresh = messagesFromSnapshot([], reasoning);
+  expect(fresh[fresh.length - 1]?.thinkingHint).not.toBe(reasoning.activity);
+  expect(messagesFromSnapshot(fresh, reasoning)).toEqual(fresh);
   const completed = messagesFromSnapshot(working, run({ state: "completed", text: "当前生命值为45。" }));
   expect(completed[completed.length - 1]?.text).toBe("当前生命值为45。");
   expect(completed[completed.length - 1]?.status).toBeUndefined();

@@ -1,5 +1,9 @@
 # 第三方内容声明
 
+## 便携包运行组件
+
+Windows 便携包随附 [Node.js](https://nodejs.org/)（许可证见 `.tools/node/LICENSE`）、[OpenCode](https://github.com/anomalyco/opencode)（MIT，见 `.tools/opencode/bin/LICENSE.txt`）、[Python 嵌入包](https://www.python.org/downloads/windows/)（许可证见 `.tools/python/LICENSE.txt`）和 [CascLib](https://github.com/ladislav-zezula/CascLib)（MIT，见 `.tools/CascLib/build-coopagent/Release/LICENSE`）。JavaScript 依赖的许可证随各依赖包保留在 `node_modules/` 中。
+
 ## 本机 StarCraft II 数据
 
 CoopAgent 从用户本机的 StarCraft II 安装中读取数据并构建合作模式数据库。仓库和发行包包含解析器、数据库结构及索引代码，不包含提取后的 CASC 文件或预构建的合作模式数据库。

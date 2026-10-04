@@ -21,10 +21,26 @@ const THINKING_HINTS = [
   "正在动员帝国劳工…",
 ] as const;
 
-// Only generic host placeholders use the themed copy. Keep concrete activity
-// verbatim and keep the chosen placeholder stable across snapshot polling.
+const HOST_ACTIVITIES = new Set([
+  "正在完成最终收尾…",
+  "已有可交付结果或探索进入长尾，正在收尾…",
+  "本阶段已保存，正在继续下一阶段…",
+  "等待用户确认目标与效果",
+  "阶段保存失败，正在停止…",
+]);
+
+function isHostActivity(label: string): boolean {
+  return HOST_ACTIVITIES.has(label)
+    || (label.length <= 96 && /^正在调用 (?:[\w.:-]+|project tool)…$/u.test(label));
+}
+
+// Only host-authored statuses belong in this compact hint. Ignore arbitrary
+// activity text from older backends/snapshots without replacing a stable hint.
 export function thinkingHintForActivity(label = "", previousHint?: string): string {
-  if (label && label !== "正在分析项目…" && label !== "正在启动 Agent…") return label;
+  if (isHostActivity(label)) return label;
+  if (label.startsWith("阶段保存失败，正在停止：")) return "阶段保存失败，正在停止…";
+  const generic = !label || label === "正在分析项目…" || label === "正在启动 Agent…";
+  if (!generic && previousHint && isHostActivity(previousHint)) return previousHint;
   if (THINKING_HINTS.some(hint => hint === previousHint)) return previousHint!;
   return THINKING_HINTS[Math.floor(Math.random() * THINKING_HINTS.length)] ?? THINKING_HINTS[0];
 }

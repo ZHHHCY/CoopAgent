@@ -51,7 +51,7 @@ export function SessionSidebar({
   onSelect,
   onDelete,
 }: Props) {
-  const [historyExpanded, setHistoryExpanded] = useState(false);
+  const [historyExpanded, setHistoryExpanded] = useState(true);
 
   return (
     <section

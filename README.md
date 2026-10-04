@@ -20,15 +20,19 @@ CoopAgent 是一个用于自定义《星际争霸 II》合作模式指挥官的a
 
 需要 Windows x64、已安装的《星际争霸 II》和可用的模型 API 配置。其他安装要求见[安装与使用指南](docs/getting-started.md)。
 
+普通使用可下载 Windows x64 便携 ZIP，完整解压后运行包内 `setup.cmd`，再运行 `start.cmd`。便携包已包含运行时，无须安装 Git、Visual Studio、Windows SDK 或 Rust。源码版仍可按下述方式自行编译。
+
+源码版安装步骤：
+
 1. 克隆或下载仓库，运行 `setup.cmd`，选择游戏安装目录并等待环境准备完成。
 2. 运行 `start.cmd`，配置模型并创建项目。
 3. 输入查询或修改要求。修改完成后，点击“启动编辑器”进入地图。
 
-首次安装需要下载和编译工具。安装中断或启动失败时，参阅[安装与使用指南](docs/getting-started.md)。
+使用源码版首次安装需要下载和编译工具。安装中断或启动失败时，参阅[安装与使用指南](docs/getting-started.md)。
 
 ## 开发
 
-运行 `scripts\dev.cmd` 启动开发环境，运行 `scripts\build.cmd` 构建桌面程序。技术资料见[合作模式数据库](docs/co-op-database.md)、[PatchPlan v2](docs/patch-plan.md)和[地图运行契约](game-a/RUNTIME-CONTRACT.md)。
+运行 `scripts\dev.cmd` 启动开发环境，运行 `scripts\build.cmd` 手动构建桌面程序；发布 Windows x64 便携 ZIP 使用 `scripts\build-portable.cmd`。技术资料见[合作模式数据库](docs/co-op-database.md)、[PatchPlan v2](docs/patch-plan.md)和[地图运行契约](game-a/RUNTIME-CONTRACT.md)。
 
 ## 许可证
 

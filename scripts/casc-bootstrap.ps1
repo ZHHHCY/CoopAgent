@@ -11,6 +11,15 @@ $dllPath = Join-Path $buildRoot 'Release\CascLib.dll'
 $cascTag = '3.0'
 $cascCommit = '4971d363e665551ac4142f541e5f2d71f1cda653'
 
+# A portable release ships the verified DLL and never needs Git or a C++ compiler.
+if (Test-Path -LiteralPath (Join-Path $repoRoot 'portable.json') -PathType Leaf) {
+    if (-not (Test-Path -LiteralPath $dllPath -PathType Leaf)) {
+        throw "便携包缺少 CASCLib：$dllPath"
+    }
+    Write-Output $dllPath
+    exit 0
+}
+
 if (-not (Test-Path -LiteralPath $toolsRoot)) {
     New-Item -ItemType Directory -Path $toolsRoot | Out-Null
 }

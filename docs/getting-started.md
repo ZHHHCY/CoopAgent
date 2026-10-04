@@ -1,6 +1,16 @@
 # 安装与使用指南
 
-本指南适用于 Windows x64 源码版本。从仓库根目录运行以下命令；首次准备和编译可能需要一段时间。
+本指南适用于 Windows x64。便携版适合直接使用，源码版保留手动编译入口。
+
+## 便携版
+
+下载 Windows x64 便携 ZIP，**完整解压**到可写目录。先运行包内 `setup.cmd` 并选择《星际争霸 II》安装目录，等待本机游戏数据提取与数据库构建完成；之后运行 `start.cmd` 或 `CoopAgent.exe`。模型 API 在应用内配置。可先运行 `setup.cmd --check` 检查包的完整性，不读取游戏文件。
+
+便携版内含 Node.js、OpenCode、Python、CascLib 和 JavaScript 运行依赖。目标机器仍需 Windows 10/11 x64、WebView2 运行时与已安装的《星际争霸 II》；无需 Git、Visual Studio、Windows SDK、Rust 或手动编译。更新便携版时请先关闭程序，再完整解压新包；项目默认保存在包内 `projects/`，请自行保留该目录。共享数据库和游戏目录配置位于用户目录，不随 ZIP 分发。
+
+## 源码版
+
+以下步骤从源码仓库根目录运行；首次准备和编译可能需要一段时间。
 
 ## 使用前准备
 
@@ -44,6 +54,8 @@ Agent 完成后可以在右侧查看改动。准备好验证时，点击“启�
 数据库未就绪或查询失败时，在环境设置或“全部改动”区域点击“重新检查”。应用中的“打开日志目录”会打开当前仓库的 `.coopagent/logs/`；`setup-*.log`、`start-*.log` 和 `app-*.jsonl` 分别记录安装、启动和应用错误。界面错误提示中的“查看技术详情”保留原始错误。
 
 如果更新过源码，先关闭桌面程序，运行 `scripts\build.cmd` 重新构建，再运行 `start.cmd`。开发热更新使用 `scripts\dev.cmd`。
+
+开发者在具备源码版工具链的机器上运行 `scripts\build-portable.cmd` 可以生成 `artifacts/CoopAgent-<版本>-windows-x64.zip`。该脚本先用现有手动编译入口构建桌面程序，再编译静态 CRT 的 CASCLib、下载并校验 Python 嵌入包、准备生产依赖，最后执行便携包完整性检查。仅复用已有桌面 EXE 时可传 `-SkipBuild`。
 
 ## 重新准备环境
 
