@@ -42,10 +42,6 @@ CoopAgent 是一个用于自定义《星际争霸 II》合作模式指挥官的a
 
 配图说明和完整操作过程见[使用指南](docs/user-guide.md)。
 
-## 开发
-
-运行 `scripts\dev.cmd` 启动开发环境，运行 `scripts\build.cmd` 构建桌面程序。技术资料见[合作模式数据库](docs/co-op-database.md)、[PatchPlan v2](docs/patch-plan.md)和[地图运行契约](game-a/RUNTIME-CONTRACT.md)。
-
 ## 许可证
 
 CoopAgent 的原创代码采用 [MIT License](LICENSE)。Blizzard 内容和其他第三方材料见[第三方内容声明](THIRD_PARTY_NOTICES.md)。
