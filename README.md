@@ -14,25 +14,37 @@ CoopAgent 是一个用于自定义《星际争霸 II》合作模式指挥官的a
 - 有些面板数值只用于显示，实际效果由游戏脚本计算。agent有时需要很长时间，很多工具调用（还有很多token）来寻找实际影响游戏效果的参数，找不到影响实际效果的可编辑参数时，agent 无法完成修改，会说明未完成的部分。
 - 目前仅接入了湮灭快车一张地图且只能在本地编辑器里体验，无法联机，队友默认且只能是雷诺。
 - 目前不能保证agent一定可以一轮实现修改目标，有可能需要启动编辑器测试之后反馈给agent再次修改。
-- 
 
-## 安装与使用
+## 快速上手
 
-需要 Windows x64、已安装的《星际争霸 II》和可用的模型 API 配置。其他安装要求见[安装与使用指南](docs/getting-started.md)。
+### 安装
 
-普通使用可下载 Windows x64 便携 ZIP，完整解压后运行包内 `setup.cmd`，再运行 `start.cmd`。便携包已包含运行时，无须安装 Git、Visual Studio、Windows SDK 或 Rust。源码版仍可按下述方式自行编译。
+系统需求：
 
-源码版安装步骤：
+- Windows x64，已安装《星际争霸 II》及其编辑器。
+- Python 3.10 或更新的 64 位版本，以及 Git for Windows，命令行中可运行 `python` 和 `git`。
+- Visual Studio 2022 或 2026 的 C++ 构建工具，包括 MSVC、MSBuild、CMake 和 Windows SDK，安装方法见[安装 C++ 构建工具](docs/install-cpp-build-tools.md)。
+- 可用的模型 API 地址、模型 ID 和 API Key。
+- 建议预留至少 20 GiB 磁盘空间。
 
-1. 克隆或下载仓库，运行 `setup.cmd`，选择游戏安装目录并等待环境准备完成。
-2. 运行 `start.cmd`，配置模型并创建项目。
-3. 输入查询或修改要求。修改完成后，点击“启动编辑器”进入地图。
+1. **克隆仓库**：运行 `git clone https://github.com/ZHHHCY/CoopAgent.git`，然后进入 `CoopAgent` 文件夹。
+2. **运行 setup**：双击仓库根目录的 `setup.cmd`，选择《星际争霸 II》安装文件夹，等待环境准备完成。
+3. **运行 start**：双击 `start.cmd` 启动 CoopAgent。首次启动需要编译桌面程序，请等待完成。
 
-使用源码版首次安装需要下载和编译工具。安装中断或启动失败时，参阅[安装与使用指南](docs/getting-started.md)。
+详细安装过程参阅[安装指南](docs/getting-started.md)。
+
+### 使用
+
+1. **创建项目**：点击上方“新建项目”，填写名称并创建。每个项目独立保存会话和修改。
+2. **配置 API**：点击左下角的模型配置区域，填写 API 地址、模型 ID 和 API Key，保存并选择模型。这些信息需与 API 平台提供的配置一致。
+3. **询问与修改**：在 CoopAgent 对话中输入要求。例如先问“蒙斯克的壁垒卫士造价是多少？”，再输入“把蒙斯克的壁垒卫士造价改成 200 矿、200 气”。等待 Agent 完成后，可在右侧查看已写入的改动。
+4. **启动地图**：点击右下角“准备并运行”，打开包含当前改动的地图。如未自动进入游戏，在编辑器中按 `Ctrl+F9` 启动。后续修改完成后，点击“更新并运行”载入新改动。
+
+配图说明和完整操作过程见[使用指南](docs/user-guide.md)。
 
 ## 开发
 
-运行 `scripts\dev.cmd` 启动开发环境，运行 `scripts\build.cmd` 手动构建桌面程序；发布 Windows x64 便携 ZIP 使用 `scripts\build-portable.cmd`。技术资料见[合作模式数据库](docs/co-op-database.md)、[PatchPlan v2](docs/patch-plan.md)和[地图运行契约](game-a/RUNTIME-CONTRACT.md)。
+运行 `scripts\dev.cmd` 启动开发环境，运行 `scripts\build.cmd` 构建桌面程序。技术资料见[合作模式数据库](docs/co-op-database.md)、[PatchPlan v2](docs/patch-plan.md)和[地图运行契约](game-a/RUNTIME-CONTRACT.md)。
 
 ## 许可证
 

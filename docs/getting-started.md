@@ -1,22 +1,14 @@
-# 安装与使用指南
+# 安装指南
 
-本指南适用于 Windows x64。便携版适合直接使用，源码版保留手动编译入口。
+本指南适用于 Windows x64 源码版本。从仓库根目录运行以下命令；首次准备和编译可能需要一段时间。
 
-## 便携版
-
-下载 Windows x64 便携 ZIP，**完整解压**到可写目录。先运行包内 `setup.cmd` 并选择《星际争霸 II》安装目录，等待本机游戏数据提取与数据库构建完成；之后运行 `start.cmd` 或 `CoopAgent.exe`。模型 API 在应用内配置。可先运行 `setup.cmd --check` 检查包的完整性，不读取游戏文件。
-
-便携版内含 Node.js、OpenCode、Python、CascLib 和 JavaScript 运行依赖。目标机器仍需 Windows 10/11 x64、WebView2 运行时与已安装的《星际争霸 II》；无需 Git、Visual Studio、Windows SDK、Rust 或手动编译。更新便携版时请先关闭程序，再完整解压新包；项目默认保存在包内 `projects/`，请自行保留该目录。共享数据库和游戏目录配置位于用户目录，不随 ZIP 分发。
-
-## 源码版
-
-以下步骤从源码仓库根目录运行；首次准备和编译可能需要一段时间。
+安装完成后，按照[使用指南](user-guide.md)创建项目、配置模型并进行第一次修改。
 
 ## 使用前准备
 
 - 已安装《星际争霸 II》。
-- Python 3.10 或更新的 **64 位**版本，安装时勾选加入 PATH；命令行可用的 Git for Windows。
-- Microsoft Visual Studio 2022 或 2026 Build Tools，包含 **Desktop development with C++** 工作负载、MSVC、MSBuild、C++ CMake 工具和 Windows 10/11 SDK。
+- Python 3.10 或更新的 **64 位**版本，命令行须能运行 `python`（[官方下载](https://www.python.org/downloads/windows/) · [官方 Windows 安装说明](https://docs.python.org/3/using/windows.html)）；命令行可用的 Git for Windows。
+- Visual Studio 2022 或 2026 的 C++ 构建工具（MSVC、MSBuild、CMake 和 Windows SDK）；缺少时可参考该教程：[安装 C++ 构建工具](install-cpp-build-tools.md)。
 - 一个可用的模型 API 配置。
 - 建议预留至少 20 GiB 磁盘空间，用于工具链、游戏数据库和构建缓存。
 
@@ -24,12 +16,21 @@
 
 ## 安装并启动
 
-1. 克隆或下载 CoopAgent 仓库。
+1. 使用 Git 克隆 CoopAgent 仓库：`git clone https://github.com/ZHHHCY/CoopAgent.git`，然后进入 `CoopAgent` 文件夹。
 2. 双击 `setup.cmd`。
-3. 在文件夹选择窗口中选择《星际争霸 II》安装目录。
-4. 等待环境准备完成。脚本会安装固定版本的工具，并从本机游戏数据构建合作模式数据库。
-5. 双击 `start.cmd`。首次启动会构建桌面程序；之后直接打开已构建的应用。
-6. 在桌面端配置模型并创建项目。新项目默认保存在当前仓库的 `projects/` 下。
+3. 在文件夹选择窗口中选择《星际争霸 II》安装目录,如下图所示，然后点击OK。
+
+  <img src="images/sc2-folder-selection.png" alt="选择星际争霸 II 安装目录" width="350">
+
+4. 等待环境准备完成。脚本会安装固定版本的工具，并从本机游戏数据构建合作模式数据库。完成时如下图所示。
+
+<img src="images/setup-complete.png" alt="环境准备完成" width="400">
+
+5. 双击 `start.cmd`来启动程序。首次启动会构建桌面程序，需要较长时间，启动后应如下图所示
+
+<img src="images/first-launch.png" alt="首次启动" width="450">
+
+6. 继续阅读[使用指南](user-guide.md)。
 
 也可以在命令行指定游戏目录：
 
@@ -37,25 +38,13 @@
 .\setup.cmd -StarCraftRoot "D:\Games\StarCraft II"
 ```
 
-## 第一次修改
-
-在 CoopAgent 页签输入要查询或修改的内容。例如：
-
-> 把凯瑞甘的生命值提高到 1400。
-
-Agent 完成后可以在右侧查看改动。准备好验证时，点击“启动编辑器”；如果编辑器打开后没有自动进入游戏，按照按钮旁的提示按 `Ctrl+F9`。游戏结束后如有新修改，再点击“更新并运行”准备最新地图。
-
-项目有独立的会话和改动记录。切换项目后，新项目从干净模板开始。
-
 ## 安装或启动遇到问题
 
 下载、解压或数据库准备中断时，重新运行 `setup.cmd`。脚本会续传已下载的归档、清理未完成的临时目录、复用完整的 CASC 提取结果，并只在数据库构建完整后替换正式结果。同一时间只允许一个环境准备进程。
 
-数据库未就绪或查询失败时，在环境设置或“全部改动”区域点击“重新检查”。应用中的“打开日志目录”会打开当前仓库的 `.coopagent/logs/`；`setup-*.log`、`start-*.log` 和 `app-*.jsonl` 分别记录安装、启动和应用错误。界面错误提示中的“查看技术详情”保留原始错误。
+数据库未就绪或查询失败时，在环境设置或“全部改动”区域点击“重新检查”。应用中的“打开日志目录”会打开当前仓库的 `.coopagent/logs/`；`setup-*.log`、`start-*.log` 和 `app-*.jsonl` 分别记录安装、启动和应用错误。界面错误提示中的“查看技术详情”保留原始错误（可以让agent分析一下）。
 
 如果更新过源码，先关闭桌面程序，运行 `scripts\build.cmd` 重新构建，再运行 `start.cmd`。开发热更新使用 `scripts\dev.cmd`。
-
-开发者在具备源码版工具链的机器上运行 `scripts\build-portable.cmd` 可以生成 `artifacts/CoopAgent-<版本>-windows-x64.zip`。该脚本先用现有手动编译入口构建桌面程序，再编译静态 CRT 的 CASCLib、下载并校验 Python 嵌入包、准备生产依赖，最后执行便携包完整性检查。仅复用已有桌面 EXE 时可传 `-SkipBuild`。
 
 ## 重新准备环境
 
