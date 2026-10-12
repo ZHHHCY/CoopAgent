@@ -1,3 +1,4 @@
+import { t, useLanguage } from "../../i18n/index";
 import { Database, MessageSquareText } from "lucide-react";
 import {
   useRef,
@@ -28,6 +29,7 @@ function clampDatabaseSplit(value: number) {
 }
 
 export function WorkspaceCenter({ agent, environment }: Props) {
+  useLanguage();
   const [view, setView] = useState<WorkspaceView>("agent");
   const [databaseOpened, setDatabaseOpened] = useState(false);
   const [inspection, setInspection] = useState<CommanderInspectionSelection>(null);
@@ -61,7 +63,7 @@ export function WorkspaceCenter({ agent, environment }: Props) {
 
   return (
     <section className="workspace">
-      <nav aria-label="工作区" className="workspace-tabs" role="tablist">
+      <nav aria-label={t("工作区")} className="workspace-tabs" role="tablist">
         <button
           aria-controls="workspace-agent-panel"
           aria-selected={view === "agent"}
@@ -86,9 +88,7 @@ export function WorkspaceCenter({ agent, environment }: Props) {
           role="tab"
           type="button"
         >
-          <Database size={14} />
-          数据库
-        </button>
+          <Database size={14} />{t("数据库")}</button>
       </nav>
 
       <div
@@ -122,7 +122,7 @@ export function WorkspaceCenter({ agent, environment }: Props) {
             />}
           </div>
           <button
-            aria-label="调整数据库列表与对象详情的高度"
+            aria-label={t("调整数据库列表与对象详情的高度")}
             aria-orientation="horizontal"
             aria-valuemax={MAX_DATABASE_SPLIT}
             aria-valuemin={MIN_DATABASE_SPLIT}
@@ -146,7 +146,7 @@ export function WorkspaceCenter({ agent, environment }: Props) {
             role="separator"
             type="button"
           ><span /></button>
-          <section aria-label="对象详细信息" className="database-workspace-detail">
+          <section aria-label={t("对象详细信息")} className="database-workspace-detail">
             <CommanderDetailInspector selection={inspection} />
           </section>
         </div>

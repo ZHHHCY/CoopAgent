@@ -1,3 +1,4 @@
+import { t } from "../../i18n/index";
 import type { AgentRunSnapshot, Message } from "./types";
 import { thinkingHintForActivity } from "./thinking-hints";
 
@@ -14,10 +15,10 @@ export function messagesFromSnapshot(messages: Message[], run: AgentRunSnapshot)
   const failed = run.state === "failed";
   const text = failed ? run.text : run.error
     ? `${run.text}${run.text ? "\n\n" : ""}${run.error}`
-    : run.text || (runIsActive(run) ? "" : "Agent 已完成分析，但没有返回文本。");
+    : run.text || (runIsActive(run) ? "" : t("Agent 已完成分析，但没有返回文本。"));
   const response: Message = {
     id: responseId, role: "assistant", text,
-    errorDetails: failed ? run.error || "Agent 未能完成本次请求。" : undefined,
+    errorDetails: failed ? run.error || t("Agent 未能完成本次请求。") : undefined,
     status: runIsActive(run) && !text ? "thinking" : undefined,
     thinkingHint: thinkingHintForActivity(run.activity, messages[existing]?.thinkingHint),
   };

@@ -1,3 +1,5 @@
+import { useLanguage } from "./i18n/index";
+import { useEffect } from "react";
 import { ProjectShell } from "./features/projects/ProjectShell";
 import "@fontsource/rajdhani/latin-500.css";
 import "@fontsource/rajdhani/latin-600.css";
@@ -48,4 +50,8 @@ function Workspace() {
   );
 }
 
-export default function App() { return <ProjectShell><Workspace /></ProjectShell>; }
+export default function App() {
+  const language = useLanguage();
+  useEffect(() => { document.documentElement.lang = language; }, [language]);
+  return <ProjectShell><Workspace /></ProjectShell>;
+}

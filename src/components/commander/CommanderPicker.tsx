@@ -1,3 +1,4 @@
+import { t, tx, useLanguage } from "../../i18n/index";
 import { ErrorNotice } from "../common/ErrorNotice";
 import { useEffect, useState } from "react";
 import { ChevronRight, Plus } from "lucide-react";
@@ -24,6 +25,7 @@ export function CommanderPicker({
   selectedCommander,
   selectedCommanderId,
 }: Props) {
+  useLanguage();
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -38,8 +40,8 @@ export function CommanderPicker({
         aria-expanded={open}
         aria-controls="commander-options"
         aria-label={selectedCommander
-          ? `当前指挥官：${commanderDisplayName(selectedCommander)}`
-          : "选择指挥官"}
+          ? tx`当前指挥官：${commanderDisplayName(selectedCommander)}`
+          : t("选择指挥官")}
         disabled={!agentReady}
         onClick={() => setOpen((current) => !current)}
       >
@@ -54,13 +56,13 @@ export function CommanderPicker({
         <ChevronRight className="commander-trigger-chevron" size={15} aria-hidden="true" />
       </button>
 
-      <section className="commander-drawer" id="commander-options" aria-label="指挥官列表">
+      <section className="commander-drawer" id="commander-options" aria-label={t("指挥官列表")}>
         <div className="commander-drawer-header">
-          <div><span>指挥官数据库</span><strong>选择指挥官</strong></div>
-          <small>{loading ? "正在读取…" : `${commanders.length} 位指挥官`}</small>
+          <div><span>{t("指挥官数据库")}</span><strong>{t("选择指挥官")}</strong></div>
+          <small>{loading ? t("正在读取…") : tx`${commanders.length} 位指挥官`}</small>
         </div>
         {error ? (
-          <ErrorNotice error={error} title="数据库内容暂时无法读取" hint="请在左侧环境设置中重新检查数据库，再选择指挥官。" />
+          <ErrorNotice error={error} title={t("数据库内容暂时无法读取")} hint={t("请在左侧环境设置中重新检查数据库，再选择指挥官。")} />
         ) : (
           <div className="commander-options">
             {commanders.map((commander) => {

@@ -1,3 +1,5 @@
+import { t, tx } from '../../i18n/index';
+
 const THINKING_HINTS = [
   "正在采集晶体矿…",
   "正在采集高能瓦斯…",
@@ -43,4 +45,11 @@ export function thinkingHintForActivity(label = "", previousHint?: string): stri
   if (!generic && previousHint && isHostActivity(previousHint)) return previousHint;
   if (THINKING_HINTS.some(hint => hint === previousHint)) return previousHint!;
   return THINKING_HINTS[Math.floor(Math.random() * THINKING_HINTS.length)] ?? THINKING_HINTS[0];
+}
+
+// Translate only host/preset display text. Model reasoning remains verbatim.
+export function localizeThinkingHint(label: string): string {
+  const tool = label.match(/^正在调用 ([\w.:-]+|project tool)…$/u);
+  if (tool) return tx`正在调用 ${tool[1]}…`;
+  return THINKING_HINTS.some(hint => hint === label) || HOST_ACTIVITIES.has(label) ? t(label) : label;
 }

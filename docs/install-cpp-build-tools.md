@@ -1,5 +1,7 @@
 # 安装 Windows C++ 构建工具
 
+简体中文 | [English](install-cpp-build-tools.en.md)
+
 本页适用于 Windows x64 源码安装。如果已安装 Visual Studio 2022 或 2026 的对应组件，可以直接返回[安装指南](getting-started.md)继续操作。
 
 1. 打开[微软 Build Tools 官方下载页](https://visualstudio.microsoft.com/visual-cpp-build-tools/)，下载并运行安装程序。

@@ -1,3 +1,4 @@
+import { t, tx, useLanguage, localizedName, localizedText } from "../../i18n/index";
 import { ErrorNotice } from "../common/ErrorNotice";
 import { commanderDisplayName, commanderFaction, masteryEffectSummary, sc2TooltipToText } from "./formatters";
 import type { CommanderWorkspaceSelection } from "./CommanderSelection";
@@ -28,29 +29,30 @@ export function CommanderProgression({
   onSelect,
   selection,
 }: Props) {
+  useLanguage();
   return (
     <>
       <section
         className={`commander-level-panel ${commanderFaction(commander.id)}`}
-        aria-label={`${commanderDisplayName(commander)} 1 至 15 级升级`}
+        aria-label={tx`${commanderDisplayName(commander)} 1 至 15 级升级`}
       >
         {loading ? (
-          <p className="commander-level-message">正在读取升级数据…</p>
+          <p className="commander-level-message">{t("正在读取升级数据…")}</p>
         ) : error ? (
-          <ErrorNotice error={error} title="指挥官数据暂时无法读取" hint="请重新选择指挥官；持续失败时，在左侧环境设置中重新检查数据库。" />
+          <ErrorNotice error={error} title={t("指挥官数据暂时无法读取")} hint={t("请重新选择指挥官；持续失败时，在左侧环境设置中重新检查数据库。")} />
         ) : (
           <div className="commander-level-grid">
             {(details?.levelPerks ?? []).slice().sort((a, b) => a.level - b.level).map((perk) => {
-              const perkName = perk.nameZhCN?.split(" /// ")[0]?.trim() || perk.nameEnUS || perk.id;
+              const perkName = localizedName(perk, perk.id);
               const selected = selection?.kind === "levelPerk" && selection.id === perk.id;
               return (
                 <button
                   className={`commander-level-item${selected ? " selected" : ""}`}
                   key={`${perk.level}-${perk.id}`}
                   type="button"
-                  aria-label={`${perk.level} 级：${perkName}`}
+                  aria-label={tx`${perk.level} 级：${perkName}`}
                   aria-pressed={selected}
-                  title={`${perk.level} 级 · ${perkName}`}
+                  title={tx`${perk.level} 级 · ${perkName}`}
                   onClick={() => onSelect(
                     selected ? null : { kind: "levelPerk", id: perk.id },
                     selected ? null : { kind: "levelPerk", perk },
@@ -67,7 +69,7 @@ export function CommanderProgression({
 
       {details && !loading ? (
         <section className={`commander-mastery-panel ${commanderFaction(commander.id)}`}>
-          <span className="commander-mastery-label">精通</span>
+          <span className="commander-mastery-label">{t("精通")}</span>
           <div className="commander-mastery-groups">
             {[1, 2, 3].map((category) => {
               const selected = selection?.kind === "mastery" && selection.category === category;
@@ -94,7 +96,7 @@ export function CommanderProgression({
                 .sort((a, b) => a.id.localeCompare(b.id))
                 .map((mastery) => (
                   <article className="commander-mastery-item" key={mastery.id}>
-                    <strong>{mastery.nameZhCN?.split(" /// ")[0]?.trim() || mastery.nameEnUS || mastery.id}</strong>
+                    <strong>{localizedName(mastery, mastery.id)}</strong>
                     <small>{masteryEffectSummary(mastery)}</small>
                   </article>
                 ))}
@@ -105,7 +107,7 @@ export function CommanderProgression({
 
       {details && !loading ? (
         <section className={`commander-prestige-panel ${commanderFaction(commander.id)}`}>
-          <span className="commander-prestige-label">威望</span>
+          <span className="commander-prestige-label">{t("威望")}</span>
           <div className="commander-prestige-groups">
             {details.prestiges.slice().sort((a, b) => a.index - b.index).map((prestige) => {
               const selected = selection?.kind === "prestige" && selection.index === prestige.index;
@@ -131,8 +133,8 @@ export function CommanderProgression({
                 .filter((prestige) => prestige.index === selection.index)
                 .map((prestige) => (
                   <article className="commander-prestige-detail" key={prestige.id}>
-                    <strong>{prestige.nameZhCN?.split(" /// ")[0]?.trim() || prestige.nameEnUS || prestige.id}</strong>
-                    <p>{sc2TooltipToText(prestige.tooltipZhCN || prestige.tooltipEnUS) || "暂无效果说明"}</p>
+                    <strong>{localizedName(prestige, prestige.id)}</strong>
+                    <p>{sc2TooltipToText(localizedText(prestige.tooltipZhCN, prestige.tooltipEnUS)) || t("暂无效果说明")}</p>
                   </article>
                 ))}
             </div>

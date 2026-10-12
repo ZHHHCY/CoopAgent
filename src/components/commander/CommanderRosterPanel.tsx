@@ -1,3 +1,4 @@
+import { t, tx, useLanguage, localizedName } from "../../i18n/index";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { CommanderPanelAbilityCard, CommanderUnitCard } from "./CommanderCards";
 import { commanderDisplayName, commanderFaction } from "./formatters";
@@ -24,6 +25,7 @@ type Props = {
 type CardPosition = { left: number; top: number } | null;
 
 export function CommanderRosterPanel({ commander, details, onSelect, selection }: Props) {
+  const language = useLanguage();
   const [unitCardPosition, setUnitCardPosition] = useState<CardPosition>(null);
   const [abilityCardPosition, setAbilityCardPosition] = useState<CardPosition>(null);
   const panelRef = useRef<HTMLElement>(null);
@@ -71,7 +73,7 @@ export function CommanderRosterPanel({ commander, details, onSelect, selection }
       });
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [selectedUnitDetails]);
+  }, [selectedUnitDetails, language]);
 
   useLayoutEffect(() => {
     if (!selectedAbilityDetails) {
@@ -96,7 +98,7 @@ export function CommanderRosterPanel({ commander, details, onSelect, selection }
       });
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [selectedAbilityDetails]);
+  }, [selectedAbilityDetails, language]);
 
   function selectUnit(
     unit: CommanderRosterUnit,
@@ -133,28 +135,28 @@ export function CommanderRosterPanel({ commander, details, onSelect, selection }
   return (
     <section
       className={`commander-roster-panel ${commanderFaction(commander.id)}`}
-      aria-label={`${commanderDisplayName(commander)} 的单位`}
+      aria-label={tx`${commanderDisplayName(commander)} 的单位`}
       ref={panelRef}
     >
       {details.currentProject ? (
-        <p className="commander-level-message">当前工程数值 · 未计算研究和战斗中的加成</p>
+        <p className="commander-level-message">{t("当前工程数值 · 未计算研究和战斗中的加成")}</p>
       ) : null}
       <RosterSection
-        title="阵容"
-        label="单位"
+        title={t("阵容")}
+        label={t("单位")}
         units={[...details.roster.units, ...details.roster.buildings]}
         selected={selection?.kind === "unit" && selection.section === "roster" ? selection.key : null}
         onSelect={(unit, event) => selectUnit(unit, "roster", event)}
       />
       <div className="commander-roster-section">
         <header>
-          <div><span>技能</span><strong>面板</strong></div>
+          <div><span>{t("技能")}</span><strong>{t("面板")}</strong></div>
           <small>{details.panel.abilities.length + details.panel.summonedUnits.length}</small>
         </header>
         <div className="commander-roster-list">
           {details.panel.abilities.map((ability) => {
             const key = `${ability.abilityId}-${ability.commandIndex ?? "default"}`;
-            const name = ability.nameZhCN?.split(" /// ")[0]?.trim() || ability.nameEnUS || ability.id;
+            const name = localizedName(ability, ability.id);
             const selected = selection?.kind === "ability" && selection.key === key;
             return (
               <button
@@ -171,13 +173,13 @@ export function CommanderRosterPanel({ commander, details, onSelect, selection }
           })}
           {details.panel.summonedUnits.map((unit) => {
             const key = `${unit.techId}-${unit.unitId}`;
-            const name = unit.nameZhCN?.split(" /// ")[0]?.trim() || unit.nameEnUS || unit.unitId;
+            const name = localizedName(unit, unit.unitId);
             const selected = selection?.kind === "unit"
               && selection.section === "panel"
               && selection.key === key;
             return (
               <button
-                aria-label={`召唤单位：${name}`}
+                aria-label={tx`召唤单位：${name}`}
                 aria-pressed={selected}
                 className={`commander-roster-item${selected ? " selected" : ""}`}
                 key={`panel-summon-${unit.unitId}`}
@@ -221,13 +223,14 @@ function RosterSection({
   title: string;
   units: CommanderRosterUnit[];
 }) {
+  useLanguage();
   return (
     <div className="commander-roster-section">
       <header><div><span>{label}</span><strong>{title}</strong></div><small>{units.length}</small></header>
       <div className="commander-roster-list">
         {units.map((unit) => {
           const key = `${unit.techId}-${unit.unitId}`;
-          const name = unit.nameZhCN?.split(" /// ")[0]?.trim() || unit.nameEnUS || unit.unitId;
+          const name = localizedName(unit, unit.unitId);
           return (
             <button
               aria-label={name}

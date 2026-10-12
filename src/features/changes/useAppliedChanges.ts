@@ -1,3 +1,4 @@
+import { t } from "../../i18n/index";
 import { useProjectBridge } from "../projects/projectBridge";
 import { useEffect, useState } from "react";
 import { isTauri } from "@tauri-apps/api/core";
@@ -23,7 +24,7 @@ export function useAppliedChanges({ agentReady, databaseBuild, receiptPath, proj
   useEffect(() => {
     if (!agentReady || !isTauri()) {
       setItems([]);
-      setError(isTauri() ? databaseMessage ?? "等待合作模式数据库就绪后读取改动记录。" : "");
+      setError(isTauri() ? databaseMessage ?? t("等待合作模式数据库就绪后读取改动记录。") : "");
       return;
     }
 

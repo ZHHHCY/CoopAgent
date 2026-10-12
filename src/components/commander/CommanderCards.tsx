@@ -1,3 +1,4 @@
+import { t, tx, useLanguage, localizedName, localizedText } from "../../i18n/index";
 import type { RefObject } from "react";
 import { sc2TooltipToText } from "./formatters";
 import type { CommanderPanelAbility, CommanderRosterUnit } from "./types";
@@ -13,16 +14,14 @@ export function CommanderUnitCard({
   position: CardPosition;
   unit: CommanderRosterUnit;
 }) {
+  useLanguage();
   const name =
-    unit.nameZhCN?.split(" /// ")[0]?.trim() ||
-    unit.nameEnUS ||
-    unit.stats.unitId ||
-    unit.unitId;
+    localizedName(unit, unit.stats.unitId || unit.unitId);
   const formatValue = (value: number | null) =>
     value === null ? "—" : String(Number(value.toFixed(2)));
   const cost = unit.stats.mineralCost === null && unit.stats.vespeneCost === null
     ? "—"
-    : `${formatValue(unit.stats.mineralCost ?? 0)} 矿 / ${formatValue(unit.stats.vespeneCost ?? 0)} 气`;
+    : tx`${formatValue(unit.stats.mineralCost ?? 0)} 矿 / ${formatValue(unit.stats.vespeneCost ?? 0)} 气`;
 
   return (
     <article
@@ -36,19 +35,19 @@ export function CommanderUnitCard({
       </header>
       <dl>
         <div>
-          <dt>{unit.stats.shieldMax === null ? "生命值" : "生命值 / 护盾"}</dt>
+          <dt>{unit.stats.shieldMax === null ? t("生命值") : t("生命值 / 护盾")}</dt>
           <dd>
             {formatValue(unit.stats.lifeMax)}
             {unit.stats.shieldMax === null ? "" : ` / ${formatValue(unit.stats.shieldMax)}`}
           </dd>
         </div>
         <div>
-          <dt>费用</dt>
+          <dt>{t("费用")}</dt>
           <dd>{cost}</dd>
         </div>
         <div>
-          <dt>建造时间</dt>
-          <dd>{unit.stats.buildTime === null ? "—" : `${formatValue(unit.stats.buildTime)} 秒`}</dd>
+          <dt>{t("建造时间")}</dt>
+          <dd>{unit.stats.buildTime === null ? "—" : tx`${formatValue(unit.stats.buildTime)} 秒`}</dd>
         </div>
       </dl>
     </article>
@@ -64,24 +63,23 @@ export function CommanderPanelAbilityCard({
   cardRef: RefObject<HTMLElement | null>;
   position: CardPosition;
 }) {
+  useLanguage();
   const name =
-    ability.nameZhCN?.split(" /// ")[0]?.trim() ||
-    ability.nameEnUS ||
-    ability.id;
+    localizedName(ability, ability.id);
   const abilityId = ability.commandIndex
     ? `${ability.abilityId},${ability.commandIndex}`
     : ability.abilityId;
-  const effect = sc2TooltipToText(ability.tooltipZhCN || ability.tooltipEnUS)
-    || "暂无效果说明";
+  const effect = sc2TooltipToText(localizedText(ability.tooltipZhCN, ability.tooltipEnUS))
+    || t("暂无效果说明");
   const formatNumber = (value: number) => String(Number(value.toFixed(2)));
   const resourceNames: Record<string, string> = {
-    custom: "特殊资源",
-    energy: "能量",
-    life: "生命",
-    minerals: "矿物",
-    shields: "护盾",
-    terrazine: "地嗪",
-    vespene: "瓦斯",
+    custom: t("特殊资源"),
+    energy: t("能量"),
+    life: t("生命"),
+    minerals: t("矿物"),
+    shields: t("护盾"),
+    terrazine: t("地嗪"),
+    vespene: t("瓦斯"),
   };
   const resources = ability.stats.resources
     .map((resource) => `${formatNumber(resource.amount)} ${resourceNames[resource.id.toLowerCase()] ?? resource.id}`)
@@ -98,21 +96,21 @@ export function CommanderPanelAbilityCard({
         <code>{abilityId}</code>
       </header>
       <section>
-        <span>效果</span>
+        <span>{t("效果")}</span>
         <p>{effect}</p>
       </section>
       <dl>
         <div>
-          <dt>冷却时间</dt>
+          <dt>{t("冷却时间")}</dt>
           <dd>
             {ability.stats.cooldown === null
               ? "—"
-              : `${formatNumber(ability.stats.cooldown)} 秒`}
+              : tx`${formatNumber(ability.stats.cooldown)} 秒`}
           </dd>
         </div>
         {resources ? (
           <div>
-            <dt>资源消耗</dt>
+            <dt>{t("资源消耗")}</dt>
             <dd>{resources}</dd>
           </div>
         ) : null}

@@ -1,4 +1,5 @@
 import { useProjectBridge } from "../projects/projectBridge";
+import { t, tx } from '../../i18n/index';
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Channel, isTauri } from "@tauri-apps/api/core";
 import { PENDING_PLAN_KEY, pendingFromSubmission, restorePendingPlan } from "./pending-plan";
@@ -246,7 +247,7 @@ export function useAgentController(agentReady: boolean) {
   const deleteAgentSession = useCallback(async (session: AgentSessionSummary) => {
     if (!isTauri() || busyRef.current || sessionReading || sessionDeletingId) return;
     const confirmed = window.confirm(
-      `确定永久删除这个 OpenCode 会话吗？\n\n${session.title}\n${session.id}\n\n对应的执行轨迹和已应用 PatchPlan 不会被删除。`,
+      tx`确定永久删除这个 OpenCode 会话吗？\n\n${session.title}\n${session.id}\n\n对应的执行轨迹和已应用 PatchPlan 不会被删除。`,
     );
     if (!confirmed) return;
     setSessionDeletingId(session.id);
@@ -382,7 +383,7 @@ export function useAgentController(agentReady: boolean) {
           message.id === responseId
             ? {
                 ...message,
-                text: "真实 Agent 仅在 CoopAgent 桌面版中运行；浏览器预览不会执行 OpenCode。",
+                text: t("真实 Agent 仅在 CoopAgent 桌面版中运行；浏览器预览不会执行 OpenCode。"),
                 status: undefined,
               }
             : message,
@@ -498,7 +499,7 @@ export function useAgentController(agentReady: boolean) {
         setMessages((current) =>
           current.map((message) =>
             message.id === responseId && !message.text
-              ? { ...message, text: "Agent 已完成分析，但没有返回文本。", status: undefined }
+              ? { ...message, text: t("Agent 已完成分析，但没有返回文本。"), status: undefined }
               : message,
           ),
         );

@@ -1,3 +1,4 @@
+import { t } from "../../i18n/index";
 import { useProjectBridge } from "../projects/projectBridge";
 import { useCallback, useEffect, useState } from "react";
 import { isTauri } from "@tauri-apps/api/core";
@@ -41,8 +42,8 @@ export function useSc2Environment() {
         valid: false,
         databaseReady: false,
         checks: [],
-        message: "安装路径只能在 CoopAgent 桌面版中配置。",
-        configPath: "用户配置目录",
+        message: t("安装路径只能在 CoopAgent 桌面版中配置。"),
+        configPath: t("用户配置目录"),
       });
       return;
     }
@@ -61,11 +62,11 @@ export function useSc2Environment() {
 
   async function chooseInstallation(agentBusy: boolean) {
     if (agentBusy) {
-      setError("Agent 运行期间不能切换环境或会话。");
+      setError(t("Agent 运行期间不能切换环境或会话。"));
       return false;
     }
     if (!isTauri()) {
-      setError("安装路径只能在 CoopAgent 桌面版中配置。");
+      setError(t("安装路径只能在 CoopAgent 桌面版中配置。"));
       return false;
     }
     setSelecting(true);
@@ -74,7 +75,7 @@ export function useSc2Environment() {
       const selection = await openDialog({
         directory: true,
         multiple: false,
-        title: "选择 StarCraft II 安装文件夹",
+        title: t("选择 StarCraft II 安装文件夹"),
         defaultPath: status?.rootPath,
       });
       if (typeof selection !== "string") return false;

@@ -1,3 +1,4 @@
+import { getLanguage, t, tx, useLanguage, localizedName, localizedText } from "../../i18n/index";
 import { ErrorNotice } from "../common/ErrorNotice";
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
@@ -14,44 +15,43 @@ export function CommanderDetailInspector({
 }: {
   selection: CommanderInspectionSelection;
 }) {
+  useLanguage();
   if (selection?.kind === "levelPerk") {
     const { perk } = selection;
     const name =
-      perk.nameZhCN?.split(" /// ")[0]?.trim() ||
-      perk.nameEnUS ||
-      perk.id;
-    const effect = sc2TooltipToText(perk.tooltipZhCN || perk.tooltipEnUS)
-      || "暂无效果说明";
+      localizedName(perk, perk.id);
+    const effect = sc2TooltipToText(localizedText(perk.tooltipZhCN, perk.tooltipEnUS))
+      || t("暂无效果说明");
     return (
       <div className="detail-inspector-content">
         <div className="detail-inspector-identity is-level-perk">
           <img alt="" draggable="false" src={perk.iconDataUrl} />
           <div>
-            <span className="detail-inspector-level">指挥官等级 {perk.level}</span>
+            <span className="detail-inspector-level">{t("指挥官等级 ")}{perk.level}</span>
             <strong>{name}</strong>
             <CopyableInspectorId value={perk.id} />
           </div>
         </div>
         <section className="detail-inspector-section is-perk-effect">
-          <header><strong>官方说明</strong></header>
+          <header><strong>{t("官方说明")}</strong></header>
           <p>{effect}</p>
         </section>
         {(perk.affectedUnits ?? []).length ? (
           <section className="detail-inspector-section is-perk-units">
-            <header><strong>影响对象</strong></header>
+            <header><strong>{t("影响对象")}</strong></header>
             <div className="detail-inspector-tags">
               {(perk.affectedUnits ?? []).map((unit) => (
                 <span key={unit.unitId}>
-                  {unit.nameZhCN?.split(" /// ")[0]?.trim() || unit.nameEnUS || unit.unitId}
+                  {localizedName(unit, unit.unitId)}
                 </span>
               ))}
             </div>
           </section>
         ) : null}
         <InspectorDetailSection
-          emptyText="数据库中没有记录额外的关联对象。"
+          emptyText={t("数据库中没有记录额外的关联对象。")}
           items={perk.relatedEffects ?? []}
-          title="关联效果"
+          title={t("关联效果")}
         />
       </div>
     );
@@ -60,24 +60,21 @@ export function CommanderDetailInspector({
   if (selection?.kind === "unit") {
     const { unit } = selection;
     const name =
-      unit.nameZhCN?.split(" /// ")[0]?.trim() ||
-      unit.nameEnUS ||
-      unit.stats.unitId ||
-      unit.unitId;
+      localizedName(unit, unit.stats.unitId || unit.unitId);
     const formatValue = (value: number | null) =>
       value === null ? "—" : String(Number(value.toFixed(2)));
     const cost = unit.stats.mineralCost === null && unit.stats.vespeneCost === null
       ? "—"
-      : `${formatValue(unit.stats.mineralCost ?? 0)} 矿 / ${formatValue(unit.stats.vespeneCost ?? 0)} 气`;
+      : tx`${formatValue(unit.stats.mineralCost ?? 0)} 矿 / ${formatValue(unit.stats.vespeneCost ?? 0)} 气`;
     const attributeNames: Record<string, string> = {
-      Light: "轻甲",
-      Armored: "重甲",
-      Biological: "生物",
-      Mechanical: "机械",
-      Psionic: "灵能",
-      Massive: "巨型",
-      Structure: "建筑",
-      Heroic: "英雄",
+      Light: t("轻甲"),
+      Armored: t("重甲"),
+      Biological: t("生物"),
+      Mechanical: t("机械"),
+      Psionic: t("灵能"),
+      Massive: t("巨型"),
+      Structure: t("建筑"),
+      Heroic: t("英雄"),
     };
     const attributeOrder = [
       "Light",
@@ -97,7 +94,7 @@ export function CommanderDetailInspector({
           || left.localeCompare(right);
       })
       .map((attribute) => attributeNames[attribute] ?? attribute)
-      .join("、");
+      .join(t("、"));
     return (
       <div className="detail-inspector-content">
         <div className="detail-inspector-identity">
@@ -109,45 +106,45 @@ export function CommanderDetailInspector({
         </div>
         <section className="detail-inspector-section is-basic">
           <header>
-            <strong>基础属性</strong>
+            <strong>{t("基础属性")}</strong>
           </header>
           <dl className="detail-inspector-stats">
-            <div><dt>费用</dt><dd>{cost}</dd></div>
-            <div><dt>生命值</dt><dd>{formatValue(unit.stats.lifeMax)}</dd></div>
+            <div><dt>{t("费用")}</dt><dd>{cost}</dd></div>
+            <div><dt>{t("生命值")}</dt><dd>{formatValue(unit.stats.lifeMax)}</dd></div>
             {unit.stats.shieldMax !== null ? (
-              <div><dt>护盾</dt><dd>{formatValue(unit.stats.shieldMax)}</dd></div>
+              <div><dt>{t("护盾")}</dt><dd>{formatValue(unit.stats.shieldMax)}</dd></div>
             ) : null}
-            <div><dt>初始护甲</dt><dd>{formatValue(unit.stats.lifeArmor)}</dd></div>
+            <div><dt>{t("初始护甲")}</dt><dd>{formatValue(unit.stats.lifeArmor)}</dd></div>
             {unit.stats.supplyCost !== null ? (
-              <div><dt>人口</dt><dd>{formatValue(unit.stats.supplyCost)}</dd></div>
+              <div><dt>{t("人口")}</dt><dd>{formatValue(unit.stats.supplyCost)}</dd></div>
             ) : null}
             {unit.stats.movementSpeed !== null ? (
-              <div><dt>移动速度</dt><dd>{formatValue(unit.stats.movementSpeed)}</dd></div>
+              <div><dt>{t("移动速度")}</dt><dd>{formatValue(unit.stats.movementSpeed)}</dd></div>
             ) : null}
             {unit.stats.sight !== null ? (
-              <div><dt>视野</dt><dd>{formatValue(unit.stats.sight)}</dd></div>
+              <div><dt>{t("视野")}</dt><dd>{formatValue(unit.stats.sight)}</dd></div>
             ) : null}
-            {attributes ? <div><dt>单位类型</dt><dd>{attributes}</dd></div> : null}
+            {attributes ? <div><dt>{t("单位类型")}</dt><dd>{attributes}</dd></div> : null}
             {unit.stats.cargoSize !== null ? (
-              <div><dt>运输舱占用</dt><dd>{formatValue(unit.stats.cargoSize)}</dd></div>
+              <div><dt>{t("运输舱占用")}</dt><dd>{formatValue(unit.stats.cargoSize)}</dd></div>
             ) : null}
             <div>
-              <dt>建造时间</dt>
-              <dd>{unit.stats.buildTime === null ? "—" : `${formatValue(unit.stats.buildTime)} 秒`}</dd>
+              <dt>{t("建造时间")}</dt>
+              <dd>{unit.stats.buildTime === null ? "—" : tx`${formatValue(unit.stats.buildTime)} 秒`}</dd>
             </div>
           </dl>
         </section>
         {unit.details ? (
           <>
-            <InspectorDetailSection items={unit.details.weapons} title="武器" />
-            <InspectorDetailSection items={unit.details.skills} title="技能" />
+            <InspectorDetailSection items={unit.details.weapons} title={t("武器")} />
+            <InspectorDetailSection items={unit.details.skills} title={t("技能")} />
             <InspectorDetailSection
               items={unit.details.commanderUpgrades}
-              title="指挥官强化"
+              title={t("指挥官强化")}
             />
           </>
         ) : (
-          <InspectorPlaceholder title="战斗详情" />
+          <InspectorPlaceholder title={t("战斗详情")} />
         )}
       </div>
     );
@@ -156,9 +153,7 @@ export function CommanderDetailInspector({
   if (selection?.kind === "ability") {
     const { ability } = selection;
     const name =
-      ability.nameZhCN?.split(" /// ")[0]?.trim() ||
-      ability.nameEnUS ||
-      ability.id;
+      localizedName(ability, ability.id);
     return (
       <div className="detail-inspector-content">
         <div className="detail-inspector-identity">
@@ -169,8 +164,8 @@ export function CommanderDetailInspector({
           </div>
         </div>
         <section className="detail-inspector-section">
-          <header><strong>效果</strong></header>
-          <p>{sc2TooltipToText(ability.tooltipZhCN || ability.tooltipEnUS) || "暂无效果说明"}</p>
+          <header><strong>{t("效果")}</strong></header>
+          <p>{sc2TooltipToText(localizedText(ability.tooltipZhCN, ability.tooltipEnUS)) || t("暂无效果说明")}</p>
         </section>
       </div>
     );
@@ -186,18 +181,19 @@ export function AppliedChangeHistory({
   changes: AppliedChangeSummary[];
   error: string;
 }) {
+  useLanguage();
   const visibleChanges = [...changes].sort((left, right) =>
     left.plan.appliedAt.localeCompare(right.plan.appliedAt) || left.id.localeCompare(right.id));
   return (
     <section className="detail-change-summary">
       <header>
         <div>
-          <span>修改记录</span>
-          <strong>全部改动</strong>
+          <span>{t("修改记录")}</span>
+          <strong>{t("全部改动")}</strong>
         </div>
         <small>{visibleChanges.length}</small>
       </header>
-      {error ? <ErrorNotice error={error} title="改动记录暂时无法读取" hint="请点击“重新检查并刷新”，确认当前项目的数据库状态。" /> : visibleChanges.length ? (
+      {error ? <ErrorNotice error={error} title={t("改动记录暂时无法读取")} hint={t("请点击“重新检查并刷新”，确认当前项目的数据库状态。")} /> : visibleChanges.length ? (
         <ul className="detail-change-list">
           {visibleChanges.map((change) => (
             <li key={change.id}>
@@ -207,20 +203,24 @@ export function AppliedChangeHistory({
           ))}
         </ul>
       ) : (
-        <p className="detail-change-empty">当前没有已写入的改动。</p>
+        <p className="detail-change-empty">{t("当前没有已写入的改动。")}</p>
       )}
     </section>
   );
 }
 
-const CHANGE_DATE_FORMAT = new Intl.DateTimeFormat("zh-CN", {
+const CHANGE_DATE_OPTIONS: Intl.DateTimeFormatOptions = {
   year: "numeric",
   month: "2-digit",
   day: "2-digit",
   hour: "2-digit",
   minute: "2-digit",
   hour12: false,
-});
+};
+const CHANGE_DATE_FORMAT = {
+  'zh-CN': new Intl.DateTimeFormat('zh-CN', CHANGE_DATE_OPTIONS),
+  'en-US': new Intl.DateTimeFormat('en-US', CHANGE_DATE_OPTIONS),
+};
 
 function displayChangeValue(value: unknown) {
   return typeof value === "string" || typeof value === "number" || typeof value === "boolean"
@@ -229,10 +229,11 @@ function displayChangeValue(value: unknown) {
 }
 
 function ChangeDetails({ change }: { change: AppliedChangeSummary }) {
+  useLanguage();
   const before = displayChangeValue(change.before);
   const after = displayChangeValue(change.after);
   const applied = new Date(change.plan.appliedAt);
-  const appliedAt = Number.isNaN(applied.getTime()) ? "" : CHANGE_DATE_FORMAT.format(applied);
+  const appliedAt = Number.isNaN(applied.getTime()) ? "" : CHANGE_DATE_FORMAT[getLanguage()].format(applied);
   return (
     <div className="detail-change-meta">
       <div className="detail-change-facts">
@@ -244,6 +245,7 @@ function ChangeDetails({ change }: { change: AppliedChangeSummary }) {
 }
 
 function CopyableInspectorId({ value }: { value: string }) {
+  useLanguage();
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
 
   useEffect(() => {
@@ -269,14 +271,14 @@ function CopyableInspectorId({ value }: { value: string }) {
 
   return (
     <div className="detail-inspector-id">
-      <span className="detail-inspector-id-label">ID：</span>
+      <span className="detail-inspector-id-label">{t("ID：")}</span>
       <code
-        aria-label={`ID ${value}，右键复制`}
+        aria-label={tx`ID ${value}，右键复制`}
         onContextMenu={(event) => {
           event.preventDefault();
           void copyId();
         }}
-        title={`${value}\n右键复制完整 ID`}
+        title={tx`${value}\n右键复制完整 ID`}
       >
         {value}
       </code>
@@ -284,17 +286,18 @@ function CopyableInspectorId({ value }: { value: string }) {
         aria-live="polite"
         className={`detail-inspector-copy-state is-${copyState}`}
       >
-        {copyState === "copied" ? "已复制" : copyState === "failed" ? "复制失败" : "右键复制"}
+        {copyState === "copied" ? t("已复制") : copyState === "failed" ? t("复制失败") : t("右键复制")}
       </span>
     </div>
   );
 }
 
 function InspectorPlaceholder({ title }: { title: string }) {
+  useLanguage();
   return (
     <section className="detail-inspector-section is-placeholder">
       <header><strong>{title}</strong></header>
-      <p>详细数据将在下一步接入。</p>
+      <p>{t("详细数据将在下一步接入。")}</p>
     </section>
   );
 }
@@ -308,6 +311,7 @@ function InspectorDetailSection({
   items: CommanderUnitDetailItem[];
   title: string;
 }) {
+  useLanguage();
   return (
     <section className="detail-inspector-section">
       <header><strong>{title}</strong></header>
@@ -316,14 +320,14 @@ function InspectorDetailSection({
           <li key={item.ids.join("|")}>
             <strong>
               {item.nameZhCN}
-              {item.level ? <span>等级 {item.level}</span> : null}
+              {item.level ? <span>{t("等级 ")}{item.level}</span> : null}
             </strong>
             <code>{item.ids.join(" · ")}</code>
             {item.facts?.length ? (
               <dl className="detail-inspector-facts">
                 {item.facts.map((fact) => (
                   <div key={fact.label}>
-                    <dt>{fact.label}</dt>
+                    <dt>{t(fact.label)}</dt>
                     <dd>{fact.value}</dd>
                   </div>
                 ))}
@@ -332,7 +336,7 @@ function InspectorDetailSection({
             <p>{sc2TooltipToText(item.descriptionZhCN)}</p>
           </li>
         ))}
-      </ul> : <p className="detail-inspector-empty-copy">{emptyText ?? "暂无关联数据。"}</p>}
+      </ul> : <p className="detail-inspector-empty-copy">{emptyText ?? t("暂无关联数据。")}</p>}
     </section>
   );
 }

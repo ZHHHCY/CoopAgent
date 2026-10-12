@@ -1,3 +1,4 @@
+import { t, tx } from "../../i18n/index";
 import { useEffect, useMemo, useState } from "react";
 import { invoke, isTauri } from "@tauri-apps/api/core";
 
@@ -78,11 +79,11 @@ export function useModelCatalog({ isAgentBusy, onModelChanged }: Options) {
 
   async function save() {
     if (isAgentBusy) {
-      setError("Agent 运行期间不能切换模型或会话。");
+      setError(t("Agent 运行期间不能切换模型或会话。"));
       return;
     }
     if (!isTauri()) {
-      setError("模型配置只能在 CoopAgent 桌面版中使用。");
+      setError(t("模型配置只能在 CoopAgent 桌面版中使用。"));
       return;
     }
     setSaving(true);
@@ -90,7 +91,7 @@ export function useModelCatalog({ isAgentBusy, onModelChanged }: Options) {
     try {
       const nextCatalog = await invoke<ModelCatalog>("model_save", { input: draft });
       setCatalog(nextCatalog);
-      onModelChanged("模型配置已更新，下一条消息将使用新的 Agent 会话。");
+      onModelChanged(t("模型配置已更新，下一条消息将使用新的 Agent 会话。"));
       setDraft(EMPTY_MODEL_DRAFT);
       setDialog("manage");
     } catch (reason) {
@@ -102,7 +103,7 @@ export function useModelCatalog({ isAgentBusy, onModelChanged }: Options) {
 
   async function select(model: ModelProfile) {
     if (isAgentBusy) {
-      setError("Agent 运行期间不能切换模型或会话。");
+      setError(t("Agent 运行期间不能切换模型或会话。"));
       return;
     }
     setError("");
@@ -112,7 +113,7 @@ export function useModelCatalog({ isAgentBusy, onModelChanged }: Options) {
         modelId: model.modelId,
       });
       setCatalog(nextCatalog);
-      onModelChanged(`已切换到 ${model.modelName}，下一条消息将使用新的 Agent 会话。`);
+      onModelChanged(tx`已切换到 ${model.modelName}，下一条消息将使用新的 Agent 会话。`);
     } catch (reason) {
       setError(String(reason));
     }
@@ -120,7 +121,7 @@ export function useModelCatalog({ isAgentBusy, onModelChanged }: Options) {
 
   async function remove(model: ModelProfile) {
     if (isAgentBusy) {
-      setError("Agent 运行期间不能切换模型或会话。");
+      setError(t("Agent 运行期间不能切换模型或会话。"));
       return;
     }
     setError("");
@@ -130,7 +131,7 @@ export function useModelCatalog({ isAgentBusy, onModelChanged }: Options) {
         modelId: model.modelId,
       });
       setCatalog(nextCatalog);
-      onModelChanged("模型配置已变更，下一条消息将使用新的 Agent 会话。");
+      onModelChanged(t("模型配置已变更，下一条消息将使用新的 Agent 会话。"));
     } catch (reason) {
       setError(String(reason));
     }

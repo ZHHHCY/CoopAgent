@@ -1,3 +1,4 @@
+import { t } from "./i18n/index";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
@@ -15,7 +16,7 @@ class AppErrorBoundary extends React.Component<React.PropsWithChildren, AppError
     if (this.state.error) {
       return (
         <main style={{ padding: 32, color: "#efb0ac", background: "#071a2e", minHeight: "100vh" }}>
-          <h1>CoopAgent 页面加载失败</h1>
+          <h1>{t("CoopAgent 页面加载失败")}</h1>
           <pre style={{ whiteSpace: "pre-wrap" }}>{this.state.error.message}</pre>
         </main>
       );
