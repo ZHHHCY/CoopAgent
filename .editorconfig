@@ -1,0 +1,9 @@
+# cmd.exe requires Windows line endings for reliable UTF-8 batch parsing.
+[*.{bat,cmd}]
+charset = utf-8
+end_of_line = crlf
+insert_final_newline = true
+
+[*.md]
+charset = utf-8
+end_of_line = lf

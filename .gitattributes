@@ -1,7 +1,8 @@
 * text=auto
 
 *.bat text eol=crlf
-*.cmd text eol=crlf
+# Preserve CRLF in both Git blobs and checkouts, including source archives.
+*.cmd -text whitespace=cr-at-eol
 *.ps1 text eol=crlf
 *.js text eol=lf
 *.mjs text eol=lf
