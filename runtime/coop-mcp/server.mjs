@@ -141,7 +141,7 @@ server.registerTool('task_checkpoint', {
   description: 'Deliver with disposition=deliver: summary is the complete answer shown verbatim before the host stops generation. Answer questions directly. delivery records complete/partial/no_change/unresolved and relevant completed effects, omissions and verification; backend application/Receipt facts remain separate. Optional evidenceKeys must copy returned evidenceKey values; omit if unused. disposition=continue/blocked saves unfinished progress.',
   inputSchema: {
     stage: z.enum(['scope', 'draft', 'verify']), summary: z.string().min(1).max(4000)
-      .describe('The complete user-facing answer, displayed verbatim. Address the user directly. Internal facts, hypotheses and delivery metadata belong in the other fields.'),
+      .describe('The complete user-facing answer, displayed verbatim. State the requested values or changes in plain player language, plus relevant conditions or unfinished requests. Do not append routine implementation/application/verification reports or plan IDs, Receipt paths or untested-game disclaimers unless asked. Internal facts, hypotheses and delivery metadata belong in the other fields; never claim gameplay was tested without evidence.'),
     facts: z.array(z.string().min(1).max(600)).max(16).optional(),
     hypotheses: z.array(z.string().min(1).max(600)).max(8).optional(),
     evidenceKeys: z.array(z.string().min(1).max(100)).max(16).optional(),

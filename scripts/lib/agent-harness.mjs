@@ -15,7 +15,7 @@ export const SUBMISSION_WAIT_HARD_MS = 240_000;
 
 const prompts = {
   closing: '宿主收尾提示：本轮探索已进入长尾。已有证据能回答问题就交付；修改任务完成已成形且范围正确的方案，或交付已完成部分与遗漏。只为仍影响本次答案或实施的具体缺口补查，不开始广泛调查，不降低写入标准。用 task_checkpoint.summary 给出完整答复。',
-  final: '宿主最终收尾：停止新调查。基于已有证据回答，或提交已经成形且通过校验的方案；需要时查看已有提交状态。仍未解决的部分明确说明，用 task_checkpoint 交付。应用状态以后端与 Receipt 为准。',
+  final: '宿主最终收尾：停止新调查。基于已有证据回答，或提交已经成形且通过校验的方案；需要时查看已有提交状态。仍未解决的部分明确说明，用 task_checkpoint 交付。应用状态以后端结果为准并保存在结构化记录中，summary 按系统提示的用户答复规则直接给出结果。',
 };
 
 const boundedIds = ids => [...new Set((ids ?? []).filter(v => typeof v === 'string'))].slice(-128);
